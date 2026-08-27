@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { generateAssistantReply } from '../domain/assistantEngine';
 import { selectEmployeeViewModel } from '../domain/selectors';
-import type { SignalStatus } from '../domain/signals';
 import type { TaskStatus } from '../domain/types';
 import { createRepository } from '../data/repositoryFactory';
 import type { FastPassRepository } from '../data/FastPassRepository';
@@ -106,27 +105,6 @@ export function AppProvider({
     [],
   );
 
-  const simulateSignal = useCallback(async (signalKey: string, status: SignalStatus) => {
-    if (!repoRef.current.simulateSignal) return;
-    dispatch({ type: 'mutation/start' });
-    try {
-      const snapshot = await repoRef.current.simulateSignal(signalKey, status);
-      dispatch({
-        type: 'snapshot/replaced',
-        payload: { ...snapshot, timestamp: new Date().toISOString() },
-      });
-    } catch (error) {
-      dispatch({
-        type: 'load/error',
-        payload: {
-          message: error instanceof Error ? error.message : 'Could not update the signal.',
-        },
-      });
-    } finally {
-      dispatch({ type: 'mutation/end' });
-    }
-  }, []);
-
   const sendAssistantMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -207,7 +185,6 @@ export function AppProvider({
         resetDemo,
         setTaskStatus,
         setTaskBlocker,
-        simulateSignal,
         sendAssistantMessage,
         resetAssistant,
       },
@@ -219,7 +196,6 @@ export function AppProvider({
       resetDemo,
       setTaskStatus,
       setTaskBlocker,
-      simulateSignal,
       sendAssistantMessage,
       resetAssistant,
     ],

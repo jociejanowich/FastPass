@@ -61,9 +61,9 @@ rollups themselves. Data access goes through the `FastPassRepository` interface 
 
 `AppProvider` (Context + `useReducer`) owns the single copy of employee, tasks,
 milestones, resources, connected-system signals, refresh timestamp, and the
-assistant transcript. Actions (`refresh`, `resetDemo`, `simulateSignal`,
-`sendAssistantMessage`, and the manual `setTaskStatus` fallback) call the
-repository and dispatch. Every derived value (progress %, journey status,
+assistant transcript. Actions (`refresh`, `sendAssistantMessage`, and the manual
+`setTaskStatus` fallback) call the repository and dispatch. Every derived value
+(progress %, journey status,
 milestone status, readiness, recommendations, blocker list, KPI counts, manager
 summary) is recomputed by memoized selectors, so a signal change immediately
 updates the Dashboard, Milestones, Assistant context, and blocker count.
@@ -86,20 +86,19 @@ already knows the answer:
 | Read Engineering Standards, Review Engineering Wiki | Knowledge base analytics           |
 
 `applySignalsToTasks(tasks, signals)` is a pure function that rewrites each
-task's status (and blocker) from the latest reading. The mock repository holds
-the signal readings and re-applies them on every read and every change, so task
+task's status (and blocker) from the latest reading. The repository holds the
+signal readings and re-applies them on every read and every change, so task
 status, progress, milestones, and recommendations are always derived — never
 stored by hand. Manual `updateTaskStatus` is rejected for any task that has a
 detection rule (it remains available only as a fallback for tasks without one).
 
-**Demo:** the **Connected systems** panel on the Tasks page shows every source
-and its signals. The `•••` menu on a row simulates that system reporting a new
-state (`simulateSignal`), which is the demo stand-in for a real Microsoft Graph,
-Intune, LMS, or ITSM webhook. "Check now" re-polls.
+The **Connected systems** panel on the Tasks page shows every source, its
+signals, and when each last reported; **Check now** re-polls.
 
-**Real integration:** implement `DataverseFastPassRepository.getSignals()` to
-read those systems (or a Dataverse table they write to) and return
-`SignalReading[]`; everything downstream is unchanged.
+**Integration:** implement `DataverseFastPassRepository.getSignals()` to read
+those systems (or a Dataverse table they write to) and return `SignalReading[]`;
+`ingestSignal(reading)` is the entry point for a webhook pushing a single update.
+Everything downstream is unchanged.
 
 ---
 
@@ -194,10 +193,10 @@ No environment file is needed — it runs entirely on mock data.
 
 ## FastPass Assistant — mock response engine
 
-`src/domain/assistantEngine.ts` is a **deterministic local response engine**, clearly
-labeled as such in the UI. `detectIntent()` keyword-matches the message; each intent
-handler inspects **live mock state** and returns text plus resource citations. It
-makes **no external calls** and needs **no secrets**.
+`src/domain/assistantEngine.ts` is a **deterministic local response engine**.
+`detectIntent()` keyword-matches the message; each intent handler inspects the
+**live task / milestone / signal state** and returns text plus resource
+citations. It makes **no external calls** and needs **no secrets**.
 
 Handled intents: next steps (blocker first, with reasoning, due dates, and a
 resource), blockers, tasks due soon, current milestone, relevant resource, manager
@@ -316,43 +315,39 @@ The UI never renders blank cards, `undefined`, `NaN`, or raw identifiers.
 
 ---
 
-## How to reset the demo
+## Resetting local state
 
-Tasks page → the **⋯ menu** (top-right) → **Reset demo data**. This restores the
-original connected-system signals (and therefore all task status) and clears the
-assistant conversation. It is intentionally not a prominent primary button. A full
-page reload also resets the demo.
+State is in-memory, so a full page reload restores the seed state. For tests,
+`MockFastPassRepository.resetDemo()` does the same programmatically.
 
 ---
 
 ## Known MVP limitations
 
 - Single hard-coded employee; no authentication.
-- State is in-memory only — a full page reload restarts the demo (SPA navigation
-  preserves it, which is what the demo walkthrough uses).
+- State is in-memory only — a full page reload restores the seed state (SPA
+  navigation preserves changes within a session).
 - The Dataverse and Graph adapters are typed placeholders that throw if selected.
 - The assistant is keyword-routed, not a language model.
-- The Career Journey page is an explicitly labeled conceptual mockup.
+- The Career Journey page reflects a first-year path, not a per-employee plan.
 - `getManagerSummary` is computed client-side from the same state; a real system
   would generate and send it server-side on a schedule.
 
 ---
 
-## Demo walkthrough
+## Walkthrough
 
 1. **Dashboard** — employee context bar, 50% progress hero, KPI cards (5/2/2/1),
    the "Setup Laptop" blocker callout with recommended action and resource, and two
    recommended next steps (blocker first).
 2. **Tasks** — four collapsible sections; each row shows an **Auto · {system}**
-   chip instead of a checkbox. Scroll to **Connected systems**, open the `•••`
-   menu on "Request Required Access", choose **Reports complete**.
-3. **Dashboard** (via the left nav) — progress is now **60%**, Completed KPI is 6,
-   recommendations have updated — with no one having ticked a box.
-4. **Milestones** — expand the buckets; "Account Setup" is Blocked because
+   chip. The **Connected systems** panel below lists every source and its latest
+   readings.
+3. **Milestones** — expand the buckets; "Account Setup" is Blocked because
    "Setup Laptop" is blocked; "Ready for Production Work" shows remaining count.
-5. **FastPass Assistant** — click _"What should I work on next?"_: the reply names the
+4. **FastPass Assistant** — click _"What should I work on next?"_: the reply names the
    blocker first, explains why, recommends the next task with its due date, and cites
-   the IT Equipment Portal. Scroll down for the **blocker alert** and **daily summary**
+   the IT Equipment Portal. Below it, the **blocker alert** and **daily summary**
    manager previews.
-6. **Career Journey** — the "Future Capability" badge, the five-stage timeline,
-   role-based guidance, the conceptual proactive insight, and the leadership takeaway.
+5. **Career Journey** — the five-stage timeline, role-based guidance, and readiness
+   outlook.

@@ -1,5 +1,4 @@
 import { createContext } from 'react';
-import type { SignalStatus } from '../domain/signals';
 import type { TaskStatus } from '../domain/types';
 import type { AppState } from './types';
 
@@ -13,8 +12,6 @@ export interface AppActions {
     blockerFlag: boolean,
     description: string | null,
   ) => Promise<void>;
-  /** Demo: simulate a connected system reporting a new state for one signal. */
-  simulateSignal: (signalKey: string, status: SignalStatus) => Promise<void>;
   sendAssistantMessage: (text: string) => Promise<void>;
   resetAssistant: () => void;
 }

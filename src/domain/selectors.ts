@@ -204,6 +204,7 @@ export function selectManagerSummary(
     }));
   return {
     employeeName: employee.displayName,
+    managerName: employee.managerName,
     role: employee.role,
     department: employee.department,
     progressPercentage,

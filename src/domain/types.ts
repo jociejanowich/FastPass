@@ -72,6 +72,7 @@ export interface Resource {
 
 export interface ManagerSummary {
   employeeName: string;
+  managerName: string;
   role: string;
   department: string;
   progressPercentage: number;

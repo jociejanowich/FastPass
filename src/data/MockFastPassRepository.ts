@@ -11,7 +11,7 @@
 import { DEMO_EMPLOYEE_ID, MOCK_LATENCY_MS, demoDateOffset } from '../config/demoConfig';
 import { applySignalsToTasks, getDetectionRule } from '../domain/detection';
 import { selectManagerSummary } from '../domain/selectors';
-import { SIGNAL_SOURCE_LABEL, type SignalReading, type SignalStatus } from '../domain/signals';
+import type { SignalReading } from '../domain/signals';
 import type {
   Employee,
   EmployeeTask,
@@ -22,7 +22,7 @@ import type {
 } from '../domain/types';
 import type { FastPassDataSnapshot, FastPassRepository } from './FastPassRepository';
 import { MOCK_MILESTONES, MOCK_RESOURCES, cloneMockEmployee, cloneMockTasks } from './mockData';
-import { cloneMockSignals, defaultSignalDetail } from './mockSignals';
+import { cloneMockSignals } from './mockSignals';
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -140,19 +140,14 @@ export class MockFastPassRepository implements FastPassRepository {
     return this.snapshot();
   }
 
-  async simulateSignal(
-    signalKey: string,
-    status: SignalStatus,
-    detail?: string,
-  ): Promise<FastPassDataSnapshot> {
+  async ingestSignal(reading: SignalReading): Promise<FastPassDataSnapshot> {
     await delay(this.latencyMs);
-    const signal = this.signals.find((candidate) => candidate.key === signalKey);
-    if (!signal) {
-      throw new Error(`Unknown signal: ${signalKey}`);
+    const index = this.signals.findIndex((candidate) => candidate.key === reading.key);
+    if (index >= 0) {
+      this.signals[index] = { ...reading };
+    } else {
+      this.signals.push({ ...reading });
     }
-    signal.status = status;
-    signal.observedAt = status === 'not-started' ? null : demoDateOffset(0);
-    signal.detail = detail ?? defaultSignalDetail(status, SIGNAL_SOURCE_LABEL[signal.source]);
     this.tasks = applySignalsToTasks(cloneMockTasks(), this.signals);
     this.touchActivity();
     return this.snapshot();

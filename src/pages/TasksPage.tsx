@@ -1,15 +1,4 @@
-import {
-  Accordion,
-  Menu,
-  MenuItem,
-  MenuList,
-  MenuPopover,
-  MenuTrigger,
-  Button,
-  makeStyles,
-  tokens,
-} from '@fluentui/react-components';
-import { MoreHorizontalRegular, ArrowResetRegular } from '@fluentui/react-icons';
+import { Accordion, makeStyles, tokens } from '@fluentui/react-components';
 import { TASK_SECTION_ORDER } from '../domain/businessRules';
 import { ConnectedSystemsCard } from '../components/ConnectedSystemsCard';
 import { PageHeader } from '../components/PageHeader';
@@ -30,8 +19,8 @@ const useStyles = makeStyles({
 
 export function TasksPage(): JSX.Element {
   const styles = useStyles();
-  const { status, error, tasks, mutating } = useAppState();
-  const { load, resetDemo } = useAppActions();
+  const { status, error, tasks } = useAppState();
+  const { load } = useAppActions();
   const grouped = useGroupedTasks();
 
   if (status === 'loading' || status === 'idle') return <LoadingState />;
@@ -49,28 +38,6 @@ export function TasksPage(): JSX.Element {
         title="My onboarding tasks"
         subtitle="Status is detected automatically from connected systems, then grouped so the most urgent work is on top."
         crumbs={[{ label: 'FastPass' }, { label: 'Tasks' }]}
-        actions={
-          <Menu>
-            <MenuTrigger disableButtonEnhancement>
-              <Button
-                appearance="subtle"
-                icon={<MoreHorizontalRegular />}
-                aria-label="Demo options"
-              />
-            </MenuTrigger>
-            <MenuPopover>
-              <MenuList>
-                <MenuItem
-                  icon={<ArrowResetRegular />}
-                  disabled={mutating}
-                  onClick={() => void resetDemo()}
-                >
-                  Reset demo data
-                </MenuItem>
-              </MenuList>
-            </MenuPopover>
-          </Menu>
-        }
       />
 
       {tasks.length === 0 ? (

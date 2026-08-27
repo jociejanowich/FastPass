@@ -1,30 +1,17 @@
-import {
-  Badge,
-  Button,
-  Caption1,
-  Menu,
-  MenuItem,
-  MenuList,
-  MenuPopover,
-  MenuTrigger,
-  Text,
-  makeStyles,
-  tokens,
-} from '@fluentui/react-components';
+import { Badge, Button, Caption1, Text, makeStyles, tokens } from '@fluentui/react-components';
 import {
   BookOpenRegular,
   BranchRegular,
   CalendarLtrRegular,
   KeyRegular,
   LaptopRegular,
-  MoreHorizontalRegular,
   PeopleTeamRegular,
   PersonPasskeyRegular,
   BookRegular,
 } from '@fluentui/react-icons';
 import type { ReactNode } from 'react';
 import type { ConnectedSystemViewModel } from '../domain/connectedSystems';
-import type { SignalSource, SignalStatus } from '../domain/signals';
+import type { SignalSource } from '../domain/signals';
 import { useAppActions, useAppState } from '../state/appHooks';
 import { useConnectedSystems, useSignalSummary } from '../state/derivedHooks';
 import { formatDateTime } from '../utils/date';
@@ -32,7 +19,6 @@ import { SectionCard } from './SectionCard';
 import { StatusBadge } from './StatusBadge';
 
 const useStyles = makeStyles({
-  intro: { color: tokens.colorNeutralForeground2 },
   summary: { display: 'flex', gap: tokens.spacingHorizontalM, flexWrap: 'wrap' },
   system: {
     border: `1px solid ${tokens.colorNeutralStroke2}`,
@@ -57,13 +43,6 @@ const useStyles = makeStyles({
     borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
   },
   signalMain: { flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
-  signalRight: {
-    flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: tokens.spacingVerticalXS,
-  },
   signalTask: { fontWeight: tokens.fontWeightSemibold },
   detail: { color: tokens.colorNeutralForeground3 },
   grid: {
@@ -85,17 +64,8 @@ const SOURCE_ICON: Record<SignalSource, ReactNode> = {
   'knowledge-base': <BookRegular />,
 };
 
-const SIMULATABLE: { status: SignalStatus; label: string }[] = [
-  { status: 'complete', label: 'Reports complete' },
-  { status: 'in-progress', label: 'Reports in progress' },
-  { status: 'blocked', label: 'Reports blocked' },
-  { status: 'not-started', label: 'Reports no activity' },
-];
-
 function SystemCard({ system }: { system: ConnectedSystemViewModel }): JSX.Element {
   const styles = useStyles();
-  const { mutating } = useAppState();
-  const { simulateSignal } = useAppActions();
 
   return (
     <div className={styles.system}>
@@ -128,32 +98,7 @@ function SystemCard({ system }: { system: ConnectedSystemViewModel }): JSX.Eleme
               </Caption1>
             ) : null}
           </div>
-          <div className={styles.signalRight}>
-            <StatusBadge status={signal.taskStatus} size="small" />
-            <Menu>
-              <MenuTrigger disableButtonEnhancement>
-                <Button
-                  size="small"
-                  appearance="subtle"
-                  icon={<MoreHorizontalRegular />}
-                  disabled={mutating}
-                  aria-label={`Simulate an update from ${system.label} for ${signal.taskName}`}
-                />
-              </MenuTrigger>
-              <MenuPopover>
-                <MenuList>
-                  {SIMULATABLE.map((option) => (
-                    <MenuItem
-                      key={option.status}
-                      onClick={() => void simulateSignal(signal.key, option.status)}
-                    >
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </MenuList>
-              </MenuPopover>
-            </Menu>
-          </div>
+          <StatusBadge status={signal.taskStatus} size="small" />
         </div>
       ))}
     </div>
@@ -170,7 +115,7 @@ export function ConnectedSystemsCard(): JSX.Element {
   return (
     <SectionCard
       title="Connected systems"
-      subtitle={`Task status is detected automatically from ${summary.connectedCount} connected systems — no manual checklist.`}
+      subtitle={`Task status is detected automatically from ${summary.connectedCount} connected systems.`}
       action={
         <Button appearance="secondary" onClick={() => void refresh()} disabled={mutating}>
           Check now
@@ -191,12 +136,6 @@ export function ConnectedSystemsCard(): JSX.Element {
           Last checked {formatDateTime(lastRefreshed)}
         </Caption1>
       </div>
-
-      <Text size={200} className={styles.intro}>
-        In this demo you can simulate a system reporting a change (the “•••” menu on each row).
-        FastPass re-derives the task, progress, milestones, and recommendations immediately — the
-        same way it would react to a real Microsoft Graph, Intune, LMS, or ITSM event.
-      </Text>
 
       <div className={styles.grid}>
         {systems.map((system) => (

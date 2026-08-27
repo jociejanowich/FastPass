@@ -1,4 +1,4 @@
-import { Badge } from '@fluentui/react-components';
+import { Badge, makeStyles } from '@fluentui/react-components';
 import {
   CheckmarkCircleFilled,
   ClockFilled,
@@ -6,6 +6,10 @@ import {
   DismissCircleFilled,
 } from '@fluentui/react-icons';
 import type { MilestoneStatus, TaskStatus } from '../domain/types';
+
+const useStyles = makeStyles({
+  badge: { whiteSpace: 'nowrap' },
+});
 
 type AnyStatus = TaskStatus | MilestoneStatus;
 
@@ -35,9 +39,11 @@ export interface StatusBadgeProps {
  * status is never communicated by color alone.
  */
 export function StatusBadge({ status, size = 'medium' }: StatusBadgeProps): JSX.Element {
+  const styles = useStyles();
   const meta = META[status];
   return (
     <Badge
+      className={styles.badge}
       appearance="tint"
       color={meta.color}
       size={size}

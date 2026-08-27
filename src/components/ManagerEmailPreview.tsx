@@ -86,7 +86,6 @@ export interface ManagerBlockerAlertProps {
 
 export function ManagerBlockerAlert({ summary }: ManagerBlockerAlertProps): JSX.Element {
   const styles = useStyles();
-  const managerLine = `${summary.employeeName}'s manager`;
 
   return (
     <Card className={styles.card} role="group" aria-label="Manager blocker alert preview">
@@ -98,7 +97,7 @@ export function ManagerBlockerAlert({ summary }: ManagerBlockerAlertProps): JSX.
         </Badge>
       </div>
       <MailMeta
-        to={managerLine}
+        to={summary.managerName}
         subject={`Action needed: ${summary.employeeName} is blocked`}
         generatedAt={summary.generatedAt}
       />
@@ -144,7 +143,7 @@ export function ManagerDailySummary({ summary }: ManagerDailySummaryProps): JSX.
         <Text weight="semibold">Daily onboarding summary</Text>
       </div>
       <MailMeta
-        to={`${summary.employeeName}'s manager`}
+        to={summary.managerName}
         subject={`Daily summary: ${summary.employeeName} — ${summary.progressPercentage}% complete`}
         generatedAt={summary.generatedAt}
       />

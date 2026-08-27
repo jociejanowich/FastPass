@@ -129,8 +129,8 @@ export function AssistantChat(): JSX.Element {
         {assistant.messages.length === 0 && !assistant.processing ? (
           <div className={styles.empty}>
             <Text>
-              Ask about your onboarding. Answers are generated from your live task, milestone, and
-              blocker state — no external service.
+              Ask about your onboarding — what to work on next, what&rsquo;s blocked, what&rsquo;s
+              due soon, or which resource to review.
             </Text>
           </div>
         ) : null}

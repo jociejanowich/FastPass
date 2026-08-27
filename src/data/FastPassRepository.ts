@@ -6,7 +6,7 @@
  * must not require any change to presentation code.
  */
 
-import type { SignalReading, SignalStatus } from '../domain/signals';
+import type { SignalReading } from '../domain/signals';
 import type {
   Employee,
   EmployeeTask,
@@ -45,14 +45,10 @@ export interface FastPassRepository {
   /** Re-reads connected systems and returns a fresh, signal-derived snapshot. */
   refresh(): Promise<FastPassDataSnapshot>;
   /**
-   * Demo-only: simulate a connected system reporting a new state for one
-   * signal, then re-derive tasks. Optional for real adapters.
+   * Ingest a signal event from a connected system (webhook or poll result),
+   * then re-derive tasks. Optional for adapters that only pull on refresh.
    */
-  simulateSignal?(
-    signalKey: string,
-    status: SignalStatus,
-    detail?: string,
-  ): Promise<FastPassDataSnapshot>;
-  /** Demo-only: restore the initial demo state. Optional for real adapters. */
+  ingestSignal?(reading: SignalReading): Promise<FastPassDataSnapshot>;
+  /** Restore the seed state. Optional; used for local development. */
   resetDemo?(): Promise<FastPassDataSnapshot>;
 }

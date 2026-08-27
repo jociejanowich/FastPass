@@ -1,9 +1,9 @@
 /**
- * Simulated readings from the systems FastPass would connect to.
+ * Seed readings from the systems FastPass connects to (device management, LMS,
+ * access management, collaboration, calendar, knowledge base).
  *
- * These reproduce the demo's mixed state (5 complete, 2 in progress, 1 blocked,
- * 2 not started) without anyone ticking a box. The connected-systems panel can
- * change a reading to demonstrate FastPass picking the change up automatically.
+ * A real deployment replaces these with live results from
+ * DataverseFastPassRepository.getSignals(); task status is derived from them.
  */
 
 import { demoDateOffset } from '../config/demoConfig';
@@ -86,19 +86,4 @@ export const MOCK_SIGNALS: SignalReading[] = [
 
 export function cloneMockSignals(): SignalReading[] {
   return MOCK_SIGNALS.map((signal) => ({ ...signal }));
-}
-
-/** Default detail text when a signal is changed from the demo panel. */
-export function defaultSignalDetail(status: SignalReading['status'], sourceLabel: string): string {
-  switch (status) {
-    case 'complete':
-      return `${sourceLabel} reported this as complete.`;
-    case 'in-progress':
-      return `${sourceLabel} reports activity in progress.`;
-    case 'blocked':
-      return `${sourceLabel} reports this is blocked and needs attention.`;
-    case 'not-started':
-    default:
-      return `${sourceLabel} has no activity to report yet.`;
-  }
 }

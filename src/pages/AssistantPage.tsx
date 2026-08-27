@@ -1,4 +1,4 @@
-import { Button, MessageBar, MessageBarBody, makeStyles, tokens } from '@fluentui/react-components';
+import { Button, makeStyles, tokens } from '@fluentui/react-components';
 import { ArrowResetRegular } from '@fluentui/react-icons';
 import { AssistantChat } from '../components/AssistantChat';
 import { EmployeeContextBar } from '../components/EmployeeContextBar';
@@ -36,7 +36,7 @@ export function AssistantPage(): JSX.Element {
     <div className={styles.wrap}>
       <PageHeader
         title="FastPass Assistant"
-        subtitle="Contextual guidance generated from your live onboarding state."
+        subtitle="Contextual guidance from your live onboarding state."
         crumbs={[{ label: 'FastPass' }, { label: 'FastPass Assistant' }]}
         actions={
           assistant.messages.length > 0 ? (
@@ -47,14 +47,6 @@ export function AssistantPage(): JSX.Element {
         }
       />
 
-      <MessageBar intent="info" layout="multiline">
-        <MessageBarBody>
-          This is a local mock response engine — it reads your current tasks, milestones, and
-          blockers and never calls an external service. It can be swapped for Azure OpenAI or
-          Copilot Studio later.
-        </MessageBarBody>
-      </MessageBar>
-
       <EmployeeContextBar employee={employee} />
 
       <div className={styles.chatShell}>
@@ -63,7 +55,7 @@ export function AssistantPage(): JSX.Element {
 
       <SectionCard
         title="What your manager sees"
-        subtitle="FastPass handles manager visibility through automated notifications — there is no separate manager dashboard."
+        subtitle="Manager visibility runs through automated notifications — no separate dashboard to check."
       >
         {managerSummary ? (
           <div className={styles.previews}>
