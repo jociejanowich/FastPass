@@ -49,6 +49,11 @@ const useStyles = makeStyles({
     gap: '2px',
   },
   label: { color: tokens.colorNeutralForeground3 },
+  blockerItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
 });
 
 interface FromLine {
@@ -102,11 +107,11 @@ export function ManagerBlockerAlert({ summary }: ManagerBlockerAlertProps): JSX.
           <Text size={300}>No active blockers. No alert would be sent.</Text>
         ) : (
           summary.blockers.map((blocker) => (
-            <div key={blocker.taskName}>
-              <Text size={300} weight="semibold">
+            <div key={blocker.taskName} className={styles.blockerItem}>
+              <Text size={300} weight="semibold" block>
                 {blocker.taskName}
               </Text>
-              <Caption1 className={styles.label}>
+              <Caption1 block className={styles.label}>
                 {blocker.dueDate
                   ? `Due ${formatDate(blocker.dueDate)} · ${formatDueRelative(blocker.dueDate)}`
                   : 'No due date'}
