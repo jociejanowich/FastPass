@@ -1,6 +1,14 @@
 import { useMemo } from 'react';
 import { groupTasksByStatus } from '../domain/businessRules';
 import {
+  selectConnectedSystems,
+  summarizeSignals,
+  type ConnectedSystemViewModel,
+  type SignalSyncSummary,
+} from '../domain/connectedSystems';
+import { findSignalForTask } from '../domain/detection';
+import type { SignalReading } from '../domain/signals';
+import {
   selectBlockers,
   selectEmployeeViewModel,
   selectManagerSummary,
@@ -59,6 +67,24 @@ export function useManagerSummary(): ManagerSummary | null {
           )
         : null,
     [employee, tasks, milestones, resources, lastRefreshed],
+  );
+}
+
+export function useConnectedSystems(): ConnectedSystemViewModel[] {
+  const { tasks, signals } = useAppState();
+  return useMemo(() => selectConnectedSystems(tasks, signals), [tasks, signals]);
+}
+
+export function useSignalSummary(): SignalSyncSummary {
+  const { signals } = useAppState();
+  return useMemo(() => summarizeSignals(signals), [signals]);
+}
+
+export function useSignalLookup(): (taskName: string) => SignalReading | null {
+  const { signals } = useAppState();
+  return useMemo(
+    () => (taskName: string) => findSignalForTask(taskName, signals) ?? null,
+    [signals],
   );
 }
 

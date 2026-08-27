@@ -1,6 +1,9 @@
 import { Card, Caption1, Text, makeStyles, tokens } from '@fluentui/react-components';
+import { isAutoDetected } from '../domain/detection';
 import type { RecommendedStep } from '../domain/selectors';
+import { useSignalLookup } from '../state/derivedHooks';
 import { formatDate, formatDueRelative } from '../utils/date';
+import { DetectionBadge } from './DetectionBadge';
 import { ResourceLink } from './ResourceLink';
 import { StatusBadge } from './StatusBadge';
 import { TaskStatusMenu } from './TaskStatusMenu';
@@ -37,7 +40,9 @@ export interface RecommendedTaskCardProps {
 
 export function RecommendedTaskCard({ step, rank }: RecommendedTaskCardProps): JSX.Element {
   const styles = useStyles();
+  const lookupSignal = useSignalLookup();
   const { task, reason, resource } = step;
+  const auto = isAutoDetected(task.name);
   return (
     <Card className={styles.card} role="group" aria-label={`Recommendation ${rank}: ${task.name}`}>
       <div className={styles.headRow}>
@@ -62,7 +67,11 @@ export function RecommendedTaskCard({ step, rank }: RecommendedTaskCardProps): J
 
       <div className={styles.footer}>
         {resource ? <ResourceLink resource={resource} prefix="Start with" /> : <span />}
-        <TaskStatusMenu taskId={task.id} status={task.status} />
+        {auto ? (
+          <DetectionBadge taskName={task.name} reading={lookupSignal(task.name)} />
+        ) : (
+          <TaskStatusMenu taskId={task.id} status={task.status} />
+        )}
       </div>
     </Card>
   );

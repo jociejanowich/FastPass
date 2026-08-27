@@ -1,13 +1,17 @@
 /**
  * In-memory implementation of FastPassRepository backed by the demo data set.
  *
- * State mutates in memory for the lifetime of the page session. `resetDemo`
- * restores the original data. This class contains no React and no business
- * rules beyond persistence bookkeeping (completedDate, blocker fields).
+ * Task status is DERIVED from connected-system signals, not stored by hand.
+ * The repository holds the latest signal readings and re-applies them to a
+ * pristine copy of the task list on every read and on every change. `resetDemo`
+ * restores the original signals. Contains no React and no domain rules beyond
+ * the signal → task mapping in `applySignalsToTasks`.
  */
 
 import { DEMO_EMPLOYEE_ID, MOCK_LATENCY_MS, demoDateOffset } from '../config/demoConfig';
+import { applySignalsToTasks, getDetectionRule } from '../domain/detection';
 import { selectManagerSummary } from '../domain/selectors';
+import { SIGNAL_SOURCE_LABEL, type SignalReading, type SignalStatus } from '../domain/signals';
 import type {
   Employee,
   EmployeeTask,
@@ -18,6 +22,7 @@ import type {
 } from '../domain/types';
 import type { FastPassDataSnapshot, FastPassRepository } from './FastPassRepository';
 import { MOCK_MILESTONES, MOCK_RESOURCES, cloneMockEmployee, cloneMockTasks } from './mockData';
+import { cloneMockSignals, defaultSignalDetail } from './mockSignals';
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -25,13 +30,15 @@ function delay(ms: number): Promise<void> {
 
 export class MockFastPassRepository implements FastPassRepository {
   private employee: Employee;
+  private signals: SignalReading[];
   private tasks: EmployeeTask[];
   private readonly milestones: Milestone[];
   private readonly resources: Resource[];
 
   constructor(private readonly latencyMs: number = MOCK_LATENCY_MS) {
     this.employee = cloneMockEmployee();
-    this.tasks = cloneMockTasks();
+    this.signals = cloneMockSignals();
+    this.tasks = applySignalsToTasks(cloneMockTasks(), this.signals);
     this.milestones = MOCK_MILESTONES.map((milestone) => ({
       ...milestone,
       taskNames: [...milestone.taskNames],
@@ -68,26 +75,26 @@ export class MockFastPassRepository implements FastPassRepository {
     }));
   }
 
+  async getSignals(): Promise<SignalReading[]> {
+    await delay(this.latencyMs);
+    return this.signals.map((signal) => ({ ...signal }));
+  }
+
   async updateTaskStatus(taskId: string, status: TaskStatus): Promise<EmployeeTask> {
     await delay(this.latencyMs);
     const task = this.requireTask(taskId);
+    if (getDetectionRule(task.name)) {
+      throw new Error(
+        `"${task.name}" is detected automatically from a connected system and cannot be set by hand.`,
+      );
+    }
     task.status = status;
-    if (status === 'Completed') {
-      task.completedDate = task.completedDate ?? demoDateOffset(0);
-      task.blockerFlag = false;
-      task.blockerDescription = null;
-    } else {
-      task.completedDate = null;
-    }
-    if (status === 'Blocked') {
-      task.blockerFlag = true;
-      task.blockerDescription =
-        task.blockerDescription ?? 'Marked blocked. Add a description of what is needed.';
-    }
-    if (status === 'In Progress' || status === 'Not Started') {
-      task.blockerFlag = false;
-      task.blockerDescription = null;
-    }
+    task.completedDate = status === 'Completed' ? (task.completedDate ?? demoDateOffset(0)) : null;
+    task.blockerFlag = status === 'Blocked';
+    task.blockerDescription =
+      status === 'Blocked'
+        ? (task.blockerDescription ?? 'Marked blocked. Add a description of what is needed.')
+        : null;
     this.touchActivity();
     return { ...task };
   }
@@ -99,6 +106,11 @@ export class MockFastPassRepository implements FastPassRepository {
   ): Promise<EmployeeTask> {
     await delay(this.latencyMs);
     const task = this.requireTask(taskId);
+    if (getDetectionRule(task.name)) {
+      throw new Error(
+        `"${task.name}" is detected automatically from a connected system and cannot be set by hand.`,
+      );
+    }
     task.blockerFlag = blockerFlag;
     task.blockerDescription = blockerFlag
       ? (description ?? task.blockerDescription ?? 'Blocked and awaiting action.')
@@ -123,13 +135,34 @@ export class MockFastPassRepository implements FastPassRepository {
 
   async refresh(): Promise<FastPassDataSnapshot> {
     await delay(this.latencyMs);
+    // A real adapter would re-poll each connected system here.
+    this.tasks = applySignalsToTasks(cloneMockTasks(), this.signals);
+    return this.snapshot();
+  }
+
+  async simulateSignal(
+    signalKey: string,
+    status: SignalStatus,
+    detail?: string,
+  ): Promise<FastPassDataSnapshot> {
+    await delay(this.latencyMs);
+    const signal = this.signals.find((candidate) => candidate.key === signalKey);
+    if (!signal) {
+      throw new Error(`Unknown signal: ${signalKey}`);
+    }
+    signal.status = status;
+    signal.observedAt = status === 'not-started' ? null : demoDateOffset(0);
+    signal.detail = detail ?? defaultSignalDetail(status, SIGNAL_SOURCE_LABEL[signal.source]);
+    this.tasks = applySignalsToTasks(cloneMockTasks(), this.signals);
+    this.touchActivity();
     return this.snapshot();
   }
 
   async resetDemo(): Promise<FastPassDataSnapshot> {
     await delay(this.latencyMs);
     this.employee = cloneMockEmployee();
-    this.tasks = cloneMockTasks();
+    this.signals = cloneMockSignals();
+    this.tasks = applySignalsToTasks(cloneMockTasks(), this.signals);
     return this.snapshot();
   }
 
@@ -145,6 +178,7 @@ export class MockFastPassRepository implements FastPassRepository {
         ...resource,
         relatedTaskNames: [...resource.relatedTaskNames],
       })),
+      signals: this.signals.map((signal) => ({ ...signal })),
     };
   }
 

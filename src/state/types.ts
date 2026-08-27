@@ -1,4 +1,5 @@
 import type { AssistantCitation, AssistantIntent } from '../domain/assistantEngine';
+import type { SignalReading } from '../domain/signals';
 import type { Employee, EmployeeTask, Milestone, Resource } from '../domain/types';
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -24,37 +25,29 @@ export interface AppState {
   tasks: EmployeeTask[];
   milestones: Milestone[];
   resources: Resource[];
+  signals: SignalReading[];
   lastRefreshed: string | null;
   mutating: boolean;
   assistant: AssistantState;
 }
 
+export interface SnapshotPayload {
+  employee: Employee;
+  tasks: EmployeeTask[];
+  milestones: Milestone[];
+  resources: Resource[];
+  signals: SignalReading[];
+  timestamp: string;
+}
+
 export type AppAction =
   | { type: 'load/start' }
-  | {
-      type: 'load/success';
-      payload: {
-        employee: Employee;
-        tasks: EmployeeTask[];
-        milestones: Milestone[];
-        resources: Resource[];
-        timestamp: string;
-      };
-    }
+  | { type: 'load/success'; payload: SnapshotPayload }
   | { type: 'load/error'; payload: { message: string } }
   | { type: 'mutation/start' }
   | { type: 'mutation/end' }
   | { type: 'task/updated'; payload: { task: EmployeeTask } }
-  | {
-      type: 'snapshot/replaced';
-      payload: {
-        employee: Employee;
-        tasks: EmployeeTask[];
-        milestones: Milestone[];
-        resources: Resource[];
-        timestamp: string;
-      };
-    }
+  | { type: 'snapshot/replaced'; payload: SnapshotPayload }
   | { type: 'assistant/message'; payload: { message: AssistantMessage } }
   | { type: 'assistant/processing'; payload: { processing: boolean } }
   | { type: 'assistant/reset' };

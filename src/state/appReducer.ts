@@ -7,6 +7,7 @@ export const initialAppState: AppState = {
   tasks: [],
   milestones: [],
   resources: [],
+  signals: [],
   lastRefreshed: null,
   mutating: false,
   assistant: {
@@ -30,6 +31,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         tasks: action.payload.tasks,
         milestones: action.payload.milestones,
         resources: action.payload.resources,
+        signals: action.payload.signals,
         lastRefreshed: action.payload.timestamp,
       };
 

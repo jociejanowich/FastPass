@@ -20,6 +20,7 @@
  *    or delegated to a custom API / Power Automate flow.
  */
 
+import type { SignalReading } from '../domain/signals';
 import type {
   Employee,
   EmployeeTask,
@@ -59,6 +60,12 @@ export class DataverseFastPassRepository implements FastPassRepository {
   }
 
   async getResources(): Promise<Resource[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async getSignals(_employeeId: string): Promise<SignalReading[]> {
+    // A real implementation would query the connected systems (Microsoft Graph,
+    // Intune, the LMS, the ITSM tool) or a Dataverse table those systems write to.
     throw new Error(NOT_IMPLEMENTED);
   }
 

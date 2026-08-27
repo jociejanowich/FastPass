@@ -11,6 +11,7 @@ import {
 } from '@fluentui/react-components';
 import { MoreHorizontalRegular, ArrowResetRegular } from '@fluentui/react-icons';
 import { TASK_SECTION_ORDER } from '../domain/businessRules';
+import { ConnectedSystemsCard } from '../components/ConnectedSystemsCard';
 import { PageHeader } from '../components/PageHeader';
 import { TaskSection } from '../components/TaskSection';
 import { EmptyState, ErrorState, LoadingState } from '../components/StateViews';
@@ -46,7 +47,7 @@ export function TasksPage(): JSX.Element {
     <div className={styles.wrap}>
       <PageHeader
         title="My onboarding tasks"
-        subtitle="Grouped by status so the most urgent work is always on top."
+        subtitle="Status is detected automatically from connected systems, then grouped so the most urgent work is on top."
         crumbs={[{ label: 'FastPass' }, { label: 'Tasks' }]}
         actions={
           <Menu>
@@ -93,6 +94,8 @@ export function TasksPage(): JSX.Element {
           ))}
         </Accordion>
       )}
+
+      <ConnectedSystemsCard />
     </div>
   );
 }

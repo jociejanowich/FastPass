@@ -30,6 +30,9 @@ src/
     types.ts             domain model (storage-agnostic)
     businessRules.ts      progress, journey status, recommendations, ordering,
                           milestone status, readiness, due-date sorting
+    signals.ts           completion-signal model (source, status, reading)
+    detection.ts         task -> signal rules; applySignalsToTasks (auto status)
+    connectedSystems.ts  "Connected systems" panel view model
     selectors.ts          derived view models (EmployeeViewModel, MilestoneViewModel,
                           BlockerViewModel, ManagerSummary)
     assistantEngine.ts    deterministic local "mock response engine"
@@ -37,7 +40,8 @@ src/
   data/            data-service layer
     FastPassRepository.ts          the interface every page depends on
     mockData.ts                   the demo data set (one place)
-    MockFastPassRepository.ts      in-memory implementation
+    mockSignals.ts                simulated readings from connected systems
+    MockFastPassRepository.ts      in-memory, signal-driven implementation
     DataverseFastPassRepository.ts placeholder adapter (same interface)
     MicrosoftGraphProfileAdapter.ts placeholder profile adapter
     repositoryFactory.ts          picks an implementation from env
@@ -56,13 +60,46 @@ rollups themselves. Data access goes through the `FastPassRepository` interface 
 ### State flow
 
 `AppProvider` (Context + `useReducer`) owns the single copy of employee, tasks,
-milestones, resources, refresh timestamp, and the assistant transcript. Actions
-(`setTaskStatus`, `setTaskBlocker`, `refresh`, `resetDemo`, `sendAssistantMessage`)
-call the repository and dispatch. Every derived value (progress %, journey status,
+milestones, resources, connected-system signals, refresh timestamp, and the
+assistant transcript. Actions (`refresh`, `resetDemo`, `simulateSignal`,
+`sendAssistantMessage`, and the manual `setTaskStatus` fallback) call the
+repository and dispatch. Every derived value (progress %, journey status,
 milestone status, readiness, recommendations, blocker list, KPI counts, manager
-summary) is recomputed by memoized selectors, so a task-status change on the Tasks
-page immediately updates the Dashboard, Milestones, Assistant context, and blocker
-count.
+summary) is recomputed by memoized selectors, so a signal change immediately
+updates the Dashboard, Milestones, Assistant context, and blocker count.
+
+---
+
+## How completion is detected (no manual checklist)
+
+FastPass does not ask the employee to tick boxes. Each task has a **detection
+rule** (`domain/detection.ts`) pointing at a **signal** from the system that
+already knows the answer:
+
+| Task                                                | Detected from                      |
+| --------------------------------------------------- | ---------------------------------- |
+| Setup Laptop, Install Development Tools             | Device management (Intune / Entra) |
+| Request Required Access                             | Access management (ITSM)           |
+| Complete Security / Compliance Training             | Learning (LMS)                     |
+| Join Teams Channels                                 | Collaboration (Teams / Graph)      |
+| Meet Manager, First Manager Check-In                | Calendar                           |
+| Read Engineering Standards, Review Engineering Wiki | Knowledge base analytics           |
+
+`applySignalsToTasks(tasks, signals)` is a pure function that rewrites each
+task's status (and blocker) from the latest reading. The mock repository holds
+the signal readings and re-applies them on every read and every change, so task
+status, progress, milestones, and recommendations are always derived — never
+stored by hand. Manual `updateTaskStatus` is rejected for any task that has a
+detection rule (it remains available only as a fallback for tasks without one).
+
+**Demo:** the **Connected systems** panel on the Tasks page shows every source
+and its signals. The `•••` menu on a row simulates that system reporting a new
+state (`simulateSignal`), which is the demo stand-in for a real Microsoft Graph,
+Intune, LMS, or ITSM webhook. "Check now" re-polls.
+
+**Real integration:** implement `DataverseFastPassRepository.getSignals()` to
+read those systems (or a Dataverse table they write to) and return
+`SignalReading[]`; everything downstream is unchanged.
 
 ---
 
@@ -130,11 +167,12 @@ No environment file is needed — it runs entirely on mock data.
   across four categories, four milestones, and eight resources.
 - Every date is derived from `DEMO_TODAY` in `src/config/demoConfig.ts` via
   `demoDateOffset(days)`. Change that one constant to shift the whole demo.
-- The demo starts in a deliberately mixed state: 5 completed, 2 in progress,
-  2 not started, 1 blocked → **50% progress**. The blocked task ("Setup Laptop")
-  has a real blocker description and a recommended resource.
-- `MockFastPassRepository` holds this data in memory, simulates ~260 ms latency, and
-  keeps `completedDate` / blocker fields consistent as status changes.
+- `src/data/mockSignals.ts` holds the simulated connected-system readings. The
+  demo starts in a deliberately mixed state derived from them: 5 completed,
+  2 in progress, 2 not started, 1 blocked → **50% progress**. The blocked task
+  ("Setup Laptop") carries the device-management blocker detail and a resource.
+- `MockFastPassRepository` holds signals + data in memory, simulates ~260 ms
+  latency, and re-derives task status from signals on every read and change.
 
 ---
 
@@ -281,8 +319,9 @@ The UI never renders blank cards, `undefined`, `NaN`, or raw identifiers.
 ## How to reset the demo
 
 Tasks page → the **⋯ menu** (top-right) → **Reset demo data**. This restores the
-original data set and clears the assistant conversation. It is intentionally not a
-prominent primary button.
+original connected-system signals (and therefore all task status) and clears the
+assistant conversation. It is intentionally not a prominent primary button. A full
+page reload also resets the demo.
 
 ---
 
@@ -304,10 +343,11 @@ prominent primary button.
 1. **Dashboard** — employee context bar, 50% progress hero, KPI cards (5/2/2/1),
    the "Setup Laptop" blocker callout with recommended action and resource, and two
    recommended next steps (blocker first).
-2. **Tasks** — four collapsible sections; open the status menu on "Read Engineering
-   Standards" and set it to **Completed**.
+2. **Tasks** — four collapsible sections; each row shows an **Auto · {system}**
+   chip instead of a checkbox. Scroll to **Connected systems**, open the `•••`
+   menu on "Request Required Access", choose **Reports complete**.
 3. **Dashboard** (via the left nav) — progress is now **60%**, Completed KPI is 6,
-   recommendations have updated.
+   recommendations have updated — with no one having ticked a box.
 4. **Milestones** — expand the buckets; "Account Setup" is Blocked because
    "Setup Laptop" is blocked; "Ready for Production Work" shows remaining count.
 5. **FastPass Assistant** — click _"What should I work on next?"_: the reply names the

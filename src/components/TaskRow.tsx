@@ -6,10 +6,13 @@ import {
   mergeClasses,
   tokens,
 } from '@fluentui/react-components';
+import { isAutoDetected } from '../domain/detection';
 import type { EmployeeTask } from '../domain/types';
 import { formatDate, formatDueRelative, isOverdue } from '../utils/date';
-import { useResourceLookup } from '../state/derivedHooks';
+import { useResourceLookup, useSignalLookup } from '../state/derivedHooks';
+import { DetectionBadge } from './DetectionBadge';
 import { ResourceLink } from './ResourceLink';
+import { StatusBadge } from './StatusBadge';
 import { TaskStatusMenu } from './TaskStatusMenu';
 
 const useStyles = makeStyles({
@@ -35,13 +38,20 @@ const useStyles = makeStyles({
   },
   meta: { color: tokens.colorNeutralForeground3 },
   overdue: { color: tokens.colorPaletteRedForeground1, fontWeight: tokens.fontWeightSemibold },
+  detected: { color: tokens.colorNeutralForeground3, fontStyle: 'italic' },
   blocker: {
     color: tokens.colorPaletteRedForeground1,
     backgroundColor: tokens.colorPaletteRedBackground1,
     borderRadius: tokens.borderRadiusSmall,
     padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
   },
-  actions: { flexShrink: 0 },
+  actions: {
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: tokens.spacingVerticalXS,
+  },
 });
 
 export interface TaskRowProps {
@@ -51,7 +61,10 @@ export interface TaskRowProps {
 export function TaskRow({ task }: TaskRowProps): JSX.Element {
   const styles = useStyles();
   const lookupResource = useResourceLookup();
+  const lookupSignal = useSignalLookup();
   const resource = lookupResource(task.recommendedResourceId);
+  const reading = lookupSignal(task.name);
+  const auto = isAutoDetected(task.name);
   const completed = task.status === 'Completed';
   const overdue = !completed && isOverdue(task.dueDate);
 
@@ -91,13 +104,24 @@ export function TaskRow({ task }: TaskRowProps): JSX.Element {
           <Text size={200} className={styles.blocker}>
             Blocked: {task.blockerDescription}
           </Text>
+        ) : auto && reading && !completed ? (
+          <Text size={200} className={styles.detected}>
+            Detected: {reading.detail}
+          </Text>
         ) : null}
 
         {resource ? <ResourceLink resource={resource} prefix="Related resource" /> : null}
       </div>
 
       <div className={styles.actions}>
-        <TaskStatusMenu taskId={task.id} status={task.status} />
+        {auto ? (
+          <>
+            <StatusBadge status={task.status} size="small" />
+            <DetectionBadge taskName={task.name} reading={reading} />
+          </>
+        ) : (
+          <TaskStatusMenu taskId={task.id} status={task.status} />
+        )}
       </div>
     </div>
   );
