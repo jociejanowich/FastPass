@@ -1,0 +1,210 @@
+import {
+  Badge,
+  Button,
+  Caption1,
+  OverlayDrawer,
+  DrawerBody,
+  Text,
+  Tooltip,
+  makeStyles,
+  tokens,
+} from '@fluentui/react-components';
+import {
+  ArrowClockwiseRegular,
+  AlertRegular,
+  DismissRegular,
+  NavigationRegular,
+  WeatherMoonRegular,
+  WeatherSunnyRegular,
+} from '@fluentui/react-icons';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAppActions, useAppState } from '../state/appHooks';
+import { useEmployeeViewModel } from '../state/derivedHooks';
+import { formatDateTime } from '../utils/date';
+import { layout } from '../theme/tokens';
+import { useTheme } from '../theme/themeContext';
+import { ProductMark } from './ProductMark';
+import { SideNavigation } from './SideNavigation';
+
+const useStyles = makeStyles({
+  shell: {
+    display: 'grid',
+    gridTemplateRows: `${layout.headerHeight} 1fr`,
+    height: '100vh',
+    backgroundColor: tokens.colorNeutralBackground3,
+  },
+  topbar: {
+    gridRow: '1',
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalM,
+    padding: `0 ${tokens.spacingHorizontalL}`,
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+  },
+  topbarBrand: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+  },
+  spacer: { flexGrow: 1 },
+  refreshMeta: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    lineHeight: '1.2',
+    '@media (max-width: 640px)': { display: 'none' },
+  },
+  body: {
+    gridRow: '2',
+    display: 'grid',
+    gridTemplateColumns: `${layout.navWidth} 1fr`,
+    minHeight: 0,
+    '@media (max-width: 1024px)': { gridTemplateColumns: '1fr' },
+  },
+  navColumn: {
+    minHeight: 0,
+    '@media (max-width: 1024px)': { display: 'none' },
+  },
+  main: {
+    minWidth: 0,
+    overflowY: 'auto',
+    padding: tokens.spacingVerticalXXL,
+    '@media (max-width: 640px)': { padding: tokens.spacingVerticalL },
+  },
+  content: {
+    maxWidth: layout.contentMaxWidth,
+    margin: '0 auto',
+  },
+  hamburger: {
+    '@media (min-width: 1025px)': { display: 'none' },
+  },
+  drawerNav: { width: '280px', padding: 0 },
+  blockerBadge: { cursor: 'default', flexShrink: 0, whiteSpace: 'nowrap' },
+  blockerWord: {
+    '@media (max-width: 640px)': { display: 'none' },
+  },
+  refreshLabel: {
+    '@media (max-width: 640px)': { display: 'none' },
+  },
+});
+
+export interface AppShellProps {
+  children: ReactNode;
+}
+
+export function AppShell({ children }: AppShellProps): JSX.Element {
+  const styles = useStyles();
+  const location = useLocation();
+  const { lastRefreshed, mutating, status } = useAppState();
+  const { refresh } = useAppActions();
+  const employee = useEmployeeViewModel();
+  const { mode, toggle } = useTheme();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  const blockerCount = employee?.blockerCount ?? 0;
+
+  return (
+    <div className={styles.shell}>
+      <header className={styles.topbar}>
+        <Button
+          className={styles.hamburger}
+          appearance="subtle"
+          icon={<NavigationRegular />}
+          aria-label="Open navigation menu"
+          onClick={() => setDrawerOpen(true)}
+        />
+        <div className={styles.topbarBrand}>
+          <ProductMark />
+          <Text weight="bold" size={400}>
+            FastPass
+          </Text>
+        </div>
+
+        <div className={styles.spacer} />
+
+        <Tooltip
+          content={
+            blockerCount > 0
+              ? `${blockerCount} blocker needs attention. Managers are alerted automatically.`
+              : 'No blockers. Managers receive a daily progress summary.'
+          }
+          relationship="description"
+        >
+          <Badge
+            className={styles.blockerBadge}
+            appearance="tint"
+            color={blockerCount > 0 ? 'danger' : 'success'}
+            icon={<AlertRegular />}
+            aria-label={`${blockerCount} active blocker${blockerCount === 1 ? '' : 's'}`}
+          >
+            {blockerCount}
+            <span className={styles.blockerWord}>&nbsp;blocker{blockerCount === 1 ? '' : 's'}</span>
+          </Badge>
+        </Tooltip>
+
+        <div className={styles.refreshMeta}>
+          <Caption1>Last refreshed</Caption1>
+          <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>
+            {status === 'ready' ? formatDateTime(lastRefreshed) : '—'}
+          </Caption1>
+        </div>
+
+        <Tooltip
+          content={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          relationship="label"
+        >
+          <Button
+            appearance="subtle"
+            icon={mode === 'dark' ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
+            onClick={toggle}
+            aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-pressed={mode === 'dark'}
+          />
+        </Tooltip>
+
+        <Button
+          appearance="subtle"
+          icon={<ArrowClockwiseRegular />}
+          onClick={() => void refresh()}
+          disabled={mutating || status === 'loading'}
+          aria-label="Refresh data"
+        >
+          <span className={styles.refreshLabel}>Refresh</span>
+        </Button>
+      </header>
+
+      <div className={styles.body}>
+        <div className={styles.navColumn}>
+          <SideNavigation employee={employee} />
+        </div>
+        <main className={styles.main} id="main-content" tabIndex={-1}>
+          <div className={styles.content}>{children}</div>
+        </main>
+      </div>
+
+      <OverlayDrawer
+        position="start"
+        open={drawerOpen}
+        onOpenChange={(_, data) => setDrawerOpen(data.open)}
+      >
+        <DrawerBody className={styles.drawerNav}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px' }}>
+            <Button
+              appearance="subtle"
+              icon={<DismissRegular />}
+              aria-label="Close navigation menu"
+              onClick={() => setDrawerOpen(false)}
+            />
+          </div>
+          <SideNavigation employee={employee} onNavigate={() => setDrawerOpen(false)} />
+        </DrawerBody>
+      </OverlayDrawer>
+    </div>
+  );
+}
