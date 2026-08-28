@@ -2,7 +2,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
+// GitHub Pages serves the app from https://<user>.github.io/FastPass/, so the
+// production build (and `npm run preview`) uses that base path. `npm run dev`
+// stays at "/".
+export default defineConfig(({ command, isPreview }) => ({
+  base: command === 'build' || isPreview ? '/FastPass/' : '/',
   plugins: [react()],
   server: {
     port: 5173,
@@ -24,4 +28,4 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
-});
+}));

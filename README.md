@@ -151,6 +151,28 @@ No environment file is needed — it runs entirely on mock data.
 
 ---
 
+## Deploying (GitHub Pages)
+
+Git ships **source only** — a collaborator sees the UI by cloning and running
+`npm install && npm run dev`. To share a link instead, the repo publishes to
+GitHub Pages automatically:
+
+- `.github/workflows/deploy.yml` builds on every push to `main` and deploys
+  `dist/` to Pages.
+- One-time setup: repo **Settings → Pages → Source: GitHub Actions**.
+- Live at `https://<owner>.github.io/FastPass/`.
+
+Two things make a Vite SPA work on Pages, both already configured:
+
+- `vite.config.ts` sets `base: '/FastPass/'` for the build (Pages serves from a
+  sub-path). `npm run dev` still runs at `/`.
+- The app uses `HashRouter`, so routes (`/#/dashboard`, `/#/team`) survive a
+  refresh with no server-side fallback.
+
+If you fork or rename the repo, update the `base` path to match the new repo name.
+
+---
+
 ## Routes
 
 | Path          | Page                                                                                          |

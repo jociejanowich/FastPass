@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import { App } from './App';
 import './index.css';
 
@@ -9,10 +9,12 @@ if (!container) {
   throw new Error('Root container #root not found');
 }
 
+// HashRouter keeps client-side routing working on static hosts (GitHub Pages)
+// without a server-side SPA fallback. Routes look like /#/dashboard.
 createRoot(container).render(
   <StrictMode>
-    <BrowserRouter>
+    <HashRouter>
       <App />
-    </BrowserRouter>
+    </HashRouter>
   </StrictMode>,
 );
