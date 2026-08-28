@@ -1,11 +1,10 @@
-import { Button, makeStyles, tokens } from '@fluentui/react-components';
-import { ArrowClockwiseRegular } from '@fluentui/react-icons';
+import { makeStyles, tokens } from '@fluentui/react-components';
 import { readyReports } from '../domain/managerView';
-import { PageHeader } from '../components/PageHeader';
 import { ErrorState, LoadingState, SuccessState } from '../components/StateViews';
 import { SectionCard } from '../components/SectionCard';
 import { AttentionQueue } from '../components/manager/AttentionQueue';
 import { ManagerAccessRequired } from '../components/manager/ManagerAccessRequired';
+import { ManagerWorkspaceHeader } from '../components/manager/ManagerWorkspaceHeader';
 import { TeamOverviewBar } from '../components/manager/TeamOverviewBar';
 import { TeamRoster } from '../components/manager/TeamRoster';
 import { WeeklyDigestCard } from '../components/manager/WeeklyDigestCard';
@@ -39,15 +38,11 @@ export function ManagerDashboardPage(): JSX.Element {
 
   return (
     <div className={styles.page}>
-      <PageHeader
-        title="Team"
-        subtitle={`Onboarding progress and blockers for your ${dashboard.totals.reports} direct reports. This replaces the blocker-alert and daily-summary emails.`}
-        crumbs={[{ label: 'FastPass' }, { label: 'Team' }]}
-        actions={
-          <Button appearance="secondary" icon={<ArrowClockwiseRegular />} onClick={reload}>
-            Refresh
-          </Button>
-        }
+      <ManagerWorkspaceHeader
+        managerName={dashboard.managerName}
+        reportCount={dashboard.totals.reports}
+        generatedAt={dashboard.generatedAt}
+        onRefresh={reload}
       />
 
       <TeamOverviewBar totals={dashboard.totals} />

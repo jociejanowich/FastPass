@@ -13,7 +13,7 @@ function demoTeam(): TeamOnboarding {
     employee: MOCK_EMPLOYEE,
     tasks: applySignalsToTasks(MOCK_TASKS, cloneMockSignals()),
   };
-  return { managerName: 'Priya Anand', members: [self, ...cloneTeamMembers()] };
+  return { managerName: 'Jim McDonnell', members: [self, ...cloneTeamMembers()] };
 }
 
 function dashboard() {
@@ -52,9 +52,9 @@ describe('buildManagerDashboard — report ordering and classification', () => {
   });
 
   it('marks the near-finished report on track', () => {
-    const dana = d.reports.find((r) => r.employee.displayName === 'Dana Whitfield');
-    expect(dana?.status).toBe('on-track');
-    expect(dana?.vm.progressPercentage).toBeGreaterThanOrEqual(80);
+    const sam = d.reports.find((r) => r.employee.displayName === 'Sam Staudaher');
+    expect(sam?.status).toBe('on-track');
+    expect(sam?.vm.progressPercentage).toBeGreaterThanOrEqual(80);
   });
 });
 

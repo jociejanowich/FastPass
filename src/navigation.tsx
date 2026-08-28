@@ -16,11 +16,10 @@ export interface NavItem {
   path: string;
   icon: ReactNode;
   description: string;
-  /** When set, only viewers with this role see the item. */
-  requiresRole?: ViewerRole;
 }
 
-export const NAV_ITEMS: NavItem[] = [
+/** The employee onboarding experience. */
+export const EMPLOYEE_NAV: NavItem[] = [
   {
     key: 'dashboard',
     label: 'Dashboard',
@@ -63,16 +62,27 @@ export const NAV_ITEMS: NavItem[] = [
     icon: <PersonStarRegular />,
     description: 'Your AI-generated development profile',
   },
+];
+
+/** The manager workspace — a separate experience, not a section of the above. */
+export const MANAGER_NAV: NavItem[] = [
   {
     key: 'team',
-    label: 'Team',
+    label: 'Team onboarding',
     path: '/team',
     icon: <PeopleTeamRegular />,
-    description: 'Onboarding progress and blockers across your reports',
-    requiresRole: 'manager',
+    description: 'Progress, blockers, and risks across your direct reports',
   },
 ];
 
 export function navItemsForRole(role: ViewerRole): NavItem[] {
-  return NAV_ITEMS.filter((item) => !item.requiresRole || item.requiresRole === role);
+  return role === 'manager' ? MANAGER_NAV : EMPLOYEE_NAV;
+}
+
+export function homePathForRole(role: ViewerRole): string {
+  return role === 'manager' ? '/team' : '/dashboard';
+}
+
+export function workspaceLabelForRole(role: ViewerRole): string {
+  return role === 'manager' ? 'Manager workspace' : 'Onboarding';
 }

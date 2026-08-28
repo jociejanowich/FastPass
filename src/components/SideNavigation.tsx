@@ -1,6 +1,6 @@
 import { Badge, Caption1, Text, makeStyles, tokens } from '@fluentui/react-components';
 import { NavLink } from 'react-router-dom';
-import { navItemsForRole } from '../navigation';
+import { navItemsForRole, workspaceLabelForRole } from '../navigation';
 import { palette } from '../theme/tokens';
 import { ProductMark } from './ProductMark';
 import type { EmployeeViewModel } from '../domain/selectors';
@@ -21,9 +21,21 @@ const useStyles = makeStyles({
     padding: `${tokens.spacingVerticalL} ${tokens.spacingHorizontalL}`,
   },
   brandText: { display: 'flex', flexDirection: 'column', lineHeight: '1.2' },
-  tagline: {
-    color: tokens.colorNeutralForeground3,
-    padding: `0 ${tokens.spacingHorizontalL} ${tokens.spacingVerticalM}`,
+  workspace: {
+    margin: `0 ${tokens.spacingHorizontalL} ${tokens.spacingVerticalM}`,
+    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
+    borderRadius: tokens.borderRadiusSmall,
+    fontWeight: tokens.fontWeightSemibold,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    fontSize: tokens.fontSizeBase200,
+    backgroundColor: tokens.colorNeutralBackground3,
+    color: tokens.colorNeutralForeground2,
+    alignSelf: 'flex-start',
+  },
+  workspaceManager: {
+    backgroundColor: tokens.colorBrandBackground2,
+    color: tokens.colorBrandForeground2,
   },
   list: {
     listStyle: 'none',
@@ -78,6 +90,7 @@ export interface SideNavigationProps {
 export function SideNavigation({ viewer, employee, onNavigate }: SideNavigationProps): JSX.Element {
   const styles = useStyles();
   const items = navItemsForRole(viewer.role);
+  const isManager = viewer.role === 'manager';
 
   return (
     <nav className={styles.root} aria-label="Primary">
@@ -92,9 +105,12 @@ export function SideNavigation({ viewer, employee, onNavigate }: SideNavigationP
           </Caption1>
         </span>
       </div>
-      <Caption1 className={styles.tagline}>
-        Turns fragmented onboarding information into prioritized action.
-      </Caption1>
+      <span
+        className={`${styles.workspace} ${isManager ? styles.workspaceManager : ''}`}
+        aria-hidden="true"
+      >
+        {workspaceLabelForRole(viewer.role)}
+      </span>
 
       <ul className={styles.list}>
         {items.map((item) => (

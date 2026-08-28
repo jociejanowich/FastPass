@@ -196,12 +196,14 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
           </MenuPopover>
         </Menu>
 
-        <div className={styles.refreshMeta}>
-          <Caption1>Last refreshed</Caption1>
-          <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>
-            {status === 'ready' ? formatDateTime(lastRefreshed) : '—'}
-          </Caption1>
-        </div>
+        {isEmployee ? (
+          <div className={styles.refreshMeta}>
+            <Caption1>Last refreshed</Caption1>
+            <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>
+              {status === 'ready' ? formatDateTime(lastRefreshed) : '—'}
+            </Caption1>
+          </div>
+        ) : null}
 
         <Tooltip
           content={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -216,15 +218,17 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
           />
         </Tooltip>
 
-        <Button
-          appearance="subtle"
-          icon={<ArrowClockwiseRegular />}
-          onClick={() => void refresh()}
-          disabled={mutating || status === 'loading'}
-          aria-label="Refresh data"
-        >
-          <span className={styles.refreshLabel}>Refresh</span>
-        </Button>
+        {isEmployee ? (
+          <Button
+            appearance="subtle"
+            icon={<ArrowClockwiseRegular />}
+            onClick={() => void refresh()}
+            disabled={mutating || status === 'loading'}
+            aria-label="Refresh data"
+          >
+            <span className={styles.refreshLabel}>Refresh</span>
+          </Button>
+        ) : null}
       </header>
 
       <div className={styles.body}>

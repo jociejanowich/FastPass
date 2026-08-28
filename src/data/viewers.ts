@@ -17,7 +17,7 @@ export const EMPLOYEE_VIEWER: Viewer = {
 
 export const MANAGER_VIEWER: Viewer = {
   id: 'mgr-guid-0001',
-  displayName: 'Priya Anand',
+  displayName: 'Jim McDonnell',
   role: 'manager',
   jobTitle: 'Engineering Manager',
 };

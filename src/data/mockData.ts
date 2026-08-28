@@ -300,7 +300,7 @@ export const MOCK_EMPLOYEE: Employee = {
   role: 'Junior Software Engineer',
   department: 'IT',
   team: 'Software Development',
-  managerName: 'Priya Anand',
+  managerName: 'Jim McDonnell',
   journeyStatus: 'In Progress',
   progressPercentage: 50,
   currentMilestone: 'Account Setup',

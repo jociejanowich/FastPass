@@ -219,12 +219,15 @@ tasks, milestones, resources) as grounding data and keep the `AssistantReply` sh
 
 ---
 
-## Manager (Team) dashboard
+## Manager workspace (Team dashboard)
 
-`/team` is a **manager-only** screen that replaces the blocker-alert and
-daily-summary emails with live visibility across a manager's direct reports.
-Employees never see it: the nav item is hidden and the route renders a
-"Manager access only" gate for non-managers.
+The manager experience is **separate from the employee app**, not a page inside
+it. When the signed-in viewer is a manager, `AppRoutes` renders a different route
+set (only `/team`), the sidebar shows only "Team onboarding" under a "Manager
+workspace" label, `/` redirects to `/team`, and the employee routes are not
+reachable. An employee who opens `/team` directly gets a "Manager access only"
+gate. `/team` replaces the blocker-alert and daily-summary emails with live
+visibility across a manager's direct reports.
 
 `domain/managerView.ts` — `buildManagerDashboard(team, …)` — is pure and reuses
 the employee-side selectors and the profile risk analysis, so the two views can
@@ -421,7 +424,9 @@ State is in-memory, so a full page reload restores the seed state. For tests,
 5. **Career Journey** — the five-stage timeline, role-based guidance, and readiness
    outlook.
 6. **About Me** — the AI-generated development profile and the upcoming-risk cards.
-7. **Team** — switch the top-bar account to **Priya Anand (Manager)**: the Team
-   nav item appears. The dashboard shows four reports at different stages, an
-   attention queue (blockers + overdue + predicted risks), and per-report drill-in.
-   Switch back to **Cesar Martinez (Employee)** and open `/team` — it's gated.
+7. **Manager workspace** — switch the top-bar account to **Jim McDonnell (Manager)**.
+   The whole shell changes: the nav is now just "Team onboarding" and the app lands
+   on `/team`. The dashboard shows four reports at different stages (Cesar Martinez,
+   Sam Staudaher, Marcus Lee, Aisha Rahman), an attention queue (blockers + overdue +
+   predicted risks), and per-report drill-in. Switch back to **Cesar Martinez
+   (Employee)** and open `/team` — it's gated.
