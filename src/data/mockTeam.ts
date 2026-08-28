@@ -102,7 +102,7 @@ const MEMBER_SPECS: MemberSpec[] = [
     employee: {
       id: 'emp-guid-0003',
       employeeId: 'EMP-021',
-      displayName: 'Marcus Lee',
+      displayName: 'Sandra Dcruz',
       role: 'Associate Product Manager',
       department: 'IT',
       team: 'Software Development',
@@ -134,7 +134,7 @@ const MEMBER_SPECS: MemberSpec[] = [
     employee: {
       id: 'emp-guid-0004',
       employeeId: 'EMP-030',
-      displayName: 'Aisha Rahman',
+      displayName: 'Sanjabi Palani',
       role: 'Junior Data Engineer',
       department: 'IT',
       team: 'Software Development',

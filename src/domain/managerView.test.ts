@@ -29,7 +29,7 @@ describe('buildManagerDashboard — totals', () => {
   });
 
   it('summarizes blocked, attention, and progress', () => {
-    expect(d.totals.blocked).toBe(2); // Cesar + Marcus
+    expect(d.totals.blocked).toBe(2); // Cesar + Sandra
     expect(d.totals.needAttention).toBeGreaterThanOrEqual(2);
     expect(d.totals.averageProgress).toBeGreaterThan(0);
     expect(d.totals.averageProgress).toBeLessThan(100);
@@ -45,10 +45,10 @@ describe('buildManagerDashboard — report ordering and classification', () => {
   });
 
   it('does not project risk onto a day-one hire', () => {
-    const aisha = d.reports.find((r) => r.employee.displayName === 'Aisha Rahman');
-    expect(aisha?.status).toBe('just-started');
-    expect(aisha?.highRisks).toHaveLength(0);
-    expect(aisha?.overdueTasks).toHaveLength(0);
+    const sanjabi = d.reports.find((r) => r.employee.displayName === 'Sanjabi Palani');
+    expect(sanjabi?.status).toBe('just-started');
+    expect(sanjabi?.highRisks).toHaveLength(0);
+    expect(sanjabi?.overdueTasks).toHaveLength(0);
   });
 
   it('marks the near-finished report on track', () => {
@@ -65,7 +65,7 @@ describe('buildManagerDashboard — attention queue', () => {
     const blockerItems = d.attention.filter((i) => i.kind === 'blocker');
     expect(blockerItems.map((i) => i.employeeName).sort()).toEqual([
       'Cesar Martinez',
-      'Marcus Lee',
+      'Sandra Dcruz',
     ]);
     for (const item of blockerItems) {
       expect(item.detail.length).toBeGreaterThan(0);
@@ -87,10 +87,10 @@ describe('buildManagerDashboard — attention queue', () => {
   });
 
   it('includes overdue tasks for a report that has fallen behind', () => {
-    const marcusOverdue = d.attention.filter(
-      (i) => i.employeeName === 'Marcus Lee' && i.kind === 'overdue',
+    const overdue = d.attention.filter(
+      (i) => i.employeeName === 'Sandra Dcruz' && i.kind === 'overdue',
     );
-    expect(marcusOverdue.length).toBeGreaterThan(0);
+    expect(overdue.length).toBeGreaterThan(0);
   });
 });
 
