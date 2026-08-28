@@ -1,6 +1,7 @@
 import {
   ArrowTrendingLinesRegular,
   HomeRegular,
+  PersonStarRegular,
   SparkleRegular,
   TaskListSquareLtrRegular,
   FlagRegular,
@@ -50,5 +51,12 @@ export const NAV_ITEMS: NavItem[] = [
     path: '/career',
     icon: <ArrowTrendingLinesRegular />,
     description: 'What comes after onboarding',
+  },
+  {
+    key: 'about',
+    label: 'About Me',
+    path: '/about',
+    icon: <PersonStarRegular />,
+    description: 'Your AI-generated development profile',
   },
 ];

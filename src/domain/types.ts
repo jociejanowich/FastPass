@@ -52,6 +52,8 @@ export interface EmployeeTask {
   required: boolean;
   category: string;
   recommendedResourceId: string | null;
+  /** Free-text notes the employee left on this task, if any. */
+  notes: string | null;
 }
 
 export interface Milestone {

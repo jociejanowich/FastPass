@@ -102,6 +102,8 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Account Setup',
     recommendedResourceId: 'res-it-portal',
+    notes:
+      'Raised with the IT desk on day 2. Still waiting on a device — not sure who to chase next.',
   },
   {
     id: 'task-join-teams',
@@ -116,6 +118,7 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Account Setup',
     recommendedResourceId: 'res-teams-directory',
+    notes: null,
   },
   {
     id: 'task-meet-manager',
@@ -130,6 +133,7 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Account Setup',
     recommendedResourceId: 'res-manager-1on1',
+    notes: null,
   },
   {
     id: 'task-install-dev-tools',
@@ -144,6 +148,8 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Tool Access & Setup',
     recommendedResourceId: null,
+    notes:
+      'Worked through the setup guide end to end. Container runtime needed a manual fix but got there.',
   },
   {
     id: 'task-request-access',
@@ -159,6 +165,8 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Tool Access & Setup',
     recommendedResourceId: 'res-access-guide',
+    notes:
+      'Repo access came through. Pipeline and staging are still pending an approver — blocked on someone else.',
   },
   {
     id: 'task-security-training',
@@ -173,6 +181,7 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Training & Compliance',
     recommendedResourceId: 'res-security-training',
+    notes: 'Finished ahead of the due date. Straightforward.',
   },
   {
     id: 'task-compliance-training',
@@ -187,6 +196,7 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Training & Compliance',
     recommendedResourceId: 'res-compliance-training',
+    notes: null,
   },
   {
     id: 'task-read-eng-standards',
@@ -201,6 +211,8 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Team Integration',
     recommendedResourceId: 'res-eng-standards',
+    notes:
+      'Read the first couple of sections. Dense — planning to come back to the branching and review parts.',
   },
   {
     id: 'task-review-eng-wiki',
@@ -215,6 +227,7 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Team Integration',
     recommendedResourceId: 'res-eng-wiki',
+    notes: null,
   },
   {
     id: 'task-first-manager-checkin',
@@ -229,6 +242,7 @@ export const MOCK_TASKS: EmployeeTask[] = [
     required: true,
     category: 'Team Integration',
     recommendedResourceId: 'res-manager-1on1',
+    notes: null,
   },
 ];
 

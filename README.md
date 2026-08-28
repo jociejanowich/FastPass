@@ -154,7 +154,8 @@ No environment file is needed — it runs entirely on mock data.
 | `/tasks`      | Tasks grouped into Blocked / In Progress / Not Started / Completed, with status controls      |
 | `/assistant`  | FastPass Assistant chat + "what your manager sees" previews                                   |
 | `/milestones` | Milestone accordion + "Ready for Production Work" summary                                     |
-| `/career`     | Future-state career journey mockup                                                            |
+| `/career`     | Career journey — timeline, role guidance, readiness outlook                                   |
+| `/about`      | About Me — AI-generated development profile + upcoming-risk detection                         |
 | `*`           | Polished not-found page                                                                       |
 
 ---
@@ -226,6 +227,40 @@ Both render from `selectManagerSummary()` and appear on the Assistant page under
 
 ---
 
+## About Me — development profile & risk detection
+
+`/about` is a compact enterprise dashboard (many small cards, no wall of text)
+that answers, in ~30 seconds: who this employee is professionally, what they are
+good at, where they have struggled, what to learn next, which career directions
+fit, which upcoming tasks may be difficult, and what to do about them.
+
+`src/domain/profileAnalysis.ts` — `analyzeProfile(input)` — is a **deterministic
+analysis engine**. It derives each section from onboarding data alone; every
+strength and development area carries its own evidence string, career suggestions
+are phrased as possibilities, and risks are "potential" (matched to prior
+friction), never predictions of failure.
+
+**Upcoming-risk logic:** each incomplete, not-currently-blocked task is scored on
+overlap with tasks that have been **blocked, finished late, stalled, or carry a
+note flagging a dependency** — same connected-system source, same work type
+(access-approval / device-setup / self-directed-reading / …), external-dependency
+shape, whether it gates an open milestone, and how soon it is due.
+`High` ≥ strong similarity to a prior blocker, `Medium` = partial overlap,
+`Low` = little prior evidence. Top 3 are shown, highest first, each with shared
+components, next steps, a learning plan, and support recommendations.
+
+**Power Automate:** `data/ProfileAnalysisService.ts` is the seam. The flow is
+expected to return one field per card (`ProfileSummary`, `Strengths`,
+`FocusAreas`, `SkillsSnapshot`, `LearningAreas`, `PerformanceSummary`,
+`CareerDirection`, `CareerTrajectory`, `UpcomingRisks`) mapping 1:1 onto
+`ProfileAnalysis`. Set `VITE_PROFILE_ANALYSIS=power-automate` + `VITE_PROFILE_FLOW_URL`
+and implement `PowerAutomateProfileAnalysisService`. The analysis runs
+automatically when the screen mounts (`useProfileAnalysis`), with an
+"Analyzing your onboarding journey…" loading state and a manual **Re-analyze**
+fallback.
+
+---
+
 ## Replacing `MockFastPassRepository` with Dataverse
 
 1. Implement `DataverseFastPassRepository` (`src/data/DataverseFastPassRepository.ts`)
@@ -251,8 +286,11 @@ viewing a report).
 
 ### Where a real AI service fits
 
-See "FastPass Assistant" above — the single integration point is
-`AppContext.sendAssistantMessage`.
+Two seams, both already isolated:
+
+- **Assistant** — `AppContext.sendAssistantMessage` (see "FastPass Assistant").
+- **About Me profile** — `data/ProfileAnalysisService.ts`, a Power Automate flow
+  returning one field per card (see "About Me").
 
 ---
 
@@ -263,6 +301,8 @@ See "FastPass Assistant" above — the single integration point is
 - `VITE_FASTPASS_DATA_SOURCE` (`mock` | `dataverse`) selects the repository.
 - `VITE_ASSISTANT_ENGINE` (`mock` | `azure-openai` | `copilot-studio`) is reserved
   for the assistant swap.
+- `VITE_PROFILE_ANALYSIS` (`mock` | `power-automate`) + `VITE_PROFILE_FLOW_URL`
+  select the About Me analysis source.
 - Secrets (API keys, client secrets) must **never** be shipped to the browser; a real
   deployment routes AI and Dataverse calls through a backend / Power Platform.
 

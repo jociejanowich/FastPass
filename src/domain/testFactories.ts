@@ -18,6 +18,7 @@ export function makeTask(overrides: Partial<EmployeeTask> = {}): EmployeeTask {
     required: true,
     category: 'Account Setup',
     recommendedResourceId: null,
+    notes: null,
     ...overrides,
   };
 }

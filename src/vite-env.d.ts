@@ -10,6 +10,8 @@ interface ImportMetaEnv {
   readonly VITE_ASSISTANT_ENGINE?: 'mock' | 'azure-openai' | 'copilot-studio';
   readonly VITE_AZURE_OPENAI_ENDPOINT?: string;
   readonly VITE_AZURE_OPENAI_DEPLOYMENT?: string;
+  readonly VITE_PROFILE_ANALYSIS?: 'mock' | 'power-automate';
+  readonly VITE_PROFILE_FLOW_URL?: string;
 }
 
 interface ImportMeta {
