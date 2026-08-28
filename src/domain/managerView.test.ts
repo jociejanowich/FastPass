@@ -45,10 +45,10 @@ describe('buildManagerDashboard — report ordering and classification', () => {
   });
 
   it('does not project risk onto a day-one hire', () => {
-    const sanjabi = d.reports.find((r) => r.employee.displayName === 'Sanjabi Palani');
-    expect(sanjabi?.status).toBe('just-started');
-    expect(sanjabi?.highRisks).toHaveLength(0);
-    expect(sanjabi?.overdueTasks).toHaveLength(0);
+    const sanjani = d.reports.find((r) => r.employee.displayName === 'Sanjani Palani');
+    expect(sanjani?.status).toBe('just-started');
+    expect(sanjani?.highRisks).toHaveLength(0);
+    expect(sanjani?.overdueTasks).toHaveLength(0);
   });
 
   it('marks the near-finished report on track', () => {

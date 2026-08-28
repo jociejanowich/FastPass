@@ -134,7 +134,7 @@ const MEMBER_SPECS: MemberSpec[] = [
     employee: {
       id: 'emp-guid-0004',
       employeeId: 'EMP-030',
-      displayName: 'Sanjabi Palani',
+      displayName: 'Sanjani Palani',
       role: 'Junior Data Engineer',
       department: 'IT',
       team: 'Software Development',

@@ -427,6 +427,6 @@ State is in-memory, so a full page reload restores the seed state. For tests,
 7. **Manager workspace** — switch the top-bar account to **Jim McDonnell (Manager)**.
    The whole shell changes: the nav is now just "Team onboarding" and the app lands
    on `/team`. The dashboard shows four reports at different stages (Cesar Martinez,
-   Sam Staudaher, Sandra Dcruz, Sanjabi Palani), an attention queue (blockers + overdue +
+   Sam Staudaher, Sandra Dcruz, Sanjani Palani), an attention queue (blockers + overdue +
    predicted risks), and per-report drill-in. Switch back to **Cesar Martinez
    (Employee)** and open `/team` — it's gated.
