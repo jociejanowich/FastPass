@@ -96,3 +96,24 @@ export interface ManagerTaskLine {
   dueDate: string | null;
   status: TaskStatus;
 }
+
+/** Who is signed in. Managers see the Team dashboard; employees do not. */
+export type ViewerRole = 'employee' | 'manager';
+
+export interface Viewer {
+  id: string;
+  displayName: string;
+  role: ViewerRole;
+  jobTitle: string;
+}
+
+/** One direct report's full onboarding data, for the manager dashboard. */
+export interface TeamMemberOnboarding {
+  employee: Employee;
+  tasks: EmployeeTask[];
+}
+
+export interface TeamOnboarding {
+  managerName: string;
+  members: TeamMemberOnboarding[];
+}

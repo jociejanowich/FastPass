@@ -1,9 +1,10 @@
-import { Caption1, Text, makeStyles, tokens } from '@fluentui/react-components';
+import { Badge, Caption1, Text, makeStyles, tokens } from '@fluentui/react-components';
 import { NavLink } from 'react-router-dom';
-import { NAV_ITEMS } from '../navigation';
+import { navItemsForRole } from '../navigation';
 import { palette } from '../theme/tokens';
 import { ProductMark } from './ProductMark';
 import type { EmployeeViewModel } from '../domain/selectors';
+import type { Viewer } from '../domain/types';
 
 const useStyles = makeStyles({
   root: {
@@ -69,12 +70,14 @@ const useStyles = makeStyles({
 });
 
 export interface SideNavigationProps {
+  viewer: Viewer;
   employee: EmployeeViewModel | null;
   onNavigate?: () => void;
 }
 
-export function SideNavigation({ employee, onNavigate }: SideNavigationProps): JSX.Element {
+export function SideNavigation({ viewer, employee, onNavigate }: SideNavigationProps): JSX.Element {
   const styles = useStyles();
+  const items = navItemsForRole(viewer.role);
 
   return (
     <nav className={styles.root} aria-label="Primary">
@@ -94,7 +97,7 @@ export function SideNavigation({ employee, onNavigate }: SideNavigationProps): J
       </Caption1>
 
       <ul className={styles.list}>
-        {NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <li key={item.key}>
             <NavLink
               to={item.path}
@@ -112,19 +115,21 @@ export function SideNavigation({ employee, onNavigate }: SideNavigationProps): J
         ))}
       </ul>
 
-      {employee ? (
-        <div className={styles.footer}>
-          <Text size={300} className={styles.footerName}>
-            {employee.employee.displayName}
-          </Text>
-          <Caption1 className={styles.footerMeta}>
-            {employee.employee.role} · {employee.employee.department}
-          </Caption1>
+      <div className={styles.footer}>
+        <Text size={300} className={styles.footerName}>
+          {viewer.displayName}
+        </Text>
+        <Caption1 className={styles.footerMeta}>{viewer.jobTitle}</Caption1>
+        {viewer.role === 'manager' ? (
+          <Badge appearance="tint" color="brand" size="small" style={{ alignSelf: 'flex-start' }}>
+            Manager view
+          </Badge>
+        ) : employee ? (
           <Caption1 className={styles.footerMeta}>
             {employee.progressPercentage}% complete · {employee.journeyStatus}
           </Caption1>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </nav>
   );
 }

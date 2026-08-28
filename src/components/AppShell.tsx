@@ -1,7 +1,13 @@
 import {
+  Avatar,
   Badge,
   Button,
   Caption1,
+  Menu,
+  MenuItemRadio,
+  MenuList,
+  MenuPopover,
+  MenuTrigger,
   OverlayDrawer,
   DrawerBody,
   Text,
@@ -12,15 +18,17 @@ import {
 import {
   ArrowClockwiseRegular,
   AlertRegular,
+  ChevronDownRegular,
   DismissRegular,
   NavigationRegular,
   WeatherMoonRegular,
   WeatherSunnyRegular,
 } from '@fluentui/react-icons';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppActions, useAppState } from '../state/appHooks';
 import { useEmployeeViewModel } from '../state/derivedHooks';
+import { DEMO_VIEWERS } from '../data/viewers';
 import { formatDateTime } from '../utils/date';
 import { layout } from '../theme/tokens';
 import { useTheme } from '../theme/themeContext';
@@ -88,6 +96,10 @@ const useStyles = makeStyles({
   refreshLabel: {
     '@media (max-width: 640px)': { display: 'none' },
   },
+  viewerName: {
+    marginLeft: tokens.spacingHorizontalXS,
+    '@media (max-width: 820px)': { display: 'none' },
+  },
 });
 
 export interface AppShellProps {
@@ -97,8 +109,8 @@ export interface AppShellProps {
 export function AppShell({ children }: AppShellProps): JSX.Element {
   const styles = useStyles();
   const location = useLocation();
-  const { lastRefreshed, mutating, status } = useAppState();
-  const { refresh } = useAppActions();
+  const { lastRefreshed, mutating, status, viewer } = useAppState();
+  const { refresh, setViewer } = useAppActions();
   const employee = useEmployeeViewModel();
   const { mode, toggle } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -108,6 +120,8 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
   }, [location.pathname]);
 
   const blockerCount = employee?.blockerCount ?? 0;
+  const isEmployee = viewer.role === 'employee';
+  const checkedViewer = useMemo(() => ({ viewer: [viewer.id] }), [viewer.id]);
 
   return (
     <div className={styles.shell}>
@@ -128,25 +142,59 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
 
         <div className={styles.spacer} />
 
-        <Tooltip
-          content={
-            blockerCount > 0
-              ? `${blockerCount} blocker needs attention. Managers are alerted automatically.`
-              : 'No blockers. Managers receive a daily progress summary.'
-          }
-          relationship="description"
-        >
-          <Badge
-            className={styles.blockerBadge}
-            appearance="tint"
-            color={blockerCount > 0 ? 'danger' : 'success'}
-            icon={<AlertRegular />}
-            aria-label={`${blockerCount} active blocker${blockerCount === 1 ? '' : 's'}`}
+        {isEmployee ? (
+          <Tooltip
+            content={
+              blockerCount > 0
+                ? `${blockerCount} blocker needs attention. Your manager is alerted automatically.`
+                : 'No blockers. Your manager sees a progress summary.'
+            }
+            relationship="description"
           >
-            {blockerCount}
-            <span className={styles.blockerWord}>&nbsp;blocker{blockerCount === 1 ? '' : 's'}</span>
-          </Badge>
-        </Tooltip>
+            <Badge
+              className={styles.blockerBadge}
+              appearance="tint"
+              color={blockerCount > 0 ? 'danger' : 'success'}
+              icon={<AlertRegular />}
+              aria-label={`${blockerCount} active blocker${blockerCount === 1 ? '' : 's'}`}
+            >
+              {blockerCount}
+              <span className={styles.blockerWord}>
+                &nbsp;blocker{blockerCount === 1 ? '' : 's'}
+              </span>
+            </Badge>
+          </Tooltip>
+        ) : null}
+
+        <Menu
+          checkedValues={checkedViewer}
+          onCheckedValueChange={(_, data) => {
+            const id = data.checkedItems[0];
+            const next = DEMO_VIEWERS.find((v) => v.id === id);
+            if (next && next.id !== viewer.id) setViewer(next);
+          }}
+        >
+          <MenuTrigger disableButtonEnhancement>
+            <Button
+              appearance="subtle"
+              iconPosition="after"
+              icon={<ChevronDownRegular />}
+              aria-label={`Signed in as ${viewer.displayName}. Switch account.`}
+            >
+              <Avatar name={viewer.displayName} size={20} color="colorful" />
+              <span className={styles.viewerName}>{viewer.displayName}</span>
+            </Button>
+          </MenuTrigger>
+          <MenuPopover>
+            <MenuList>
+              {DEMO_VIEWERS.map((v) => (
+                <MenuItemRadio key={v.id} name="viewer" value={v.id}>
+                  {v.displayName} — {v.role === 'manager' ? 'Manager' : 'Employee'}
+                </MenuItemRadio>
+              ))}
+            </MenuList>
+          </MenuPopover>
+        </Menu>
 
         <div className={styles.refreshMeta}>
           <Caption1>Last refreshed</Caption1>
@@ -181,7 +229,7 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
 
       <div className={styles.body}>
         <div className={styles.navColumn}>
-          <SideNavigation employee={employee} />
+          <SideNavigation viewer={viewer} employee={employee} />
         </div>
         <main className={styles.main} id="main-content" tabIndex={-1}>
           <div className={styles.content}>{children}</div>
@@ -202,7 +250,11 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
               onClick={() => setDrawerOpen(false)}
             />
           </div>
-          <SideNavigation employee={employee} onNavigate={() => setDrawerOpen(false)} />
+          <SideNavigation
+            viewer={viewer}
+            employee={employee}
+            onNavigate={() => setDrawerOpen(false)}
+          />
         </DrawerBody>
       </OverlayDrawer>
     </div>

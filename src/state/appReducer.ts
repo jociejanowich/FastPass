@@ -1,3 +1,4 @@
+import { EMPLOYEE_VIEWER } from '../data/viewers';
 import type { AppAction, AppState } from './types';
 
 export const initialAppState: AppState = {
@@ -10,6 +11,7 @@ export const initialAppState: AppState = {
   signals: [],
   lastRefreshed: null,
   mutating: false,
+  viewer: EMPLOYEE_VIEWER,
   assistant: {
     messages: [],
     processing: false,
@@ -69,6 +71,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case 'assistant/reset':
       return { ...state, assistant: { messages: [], processing: false } };
+
+    case 'viewer/set':
+      return { ...state, viewer: action.payload.viewer };
 
     default:
       return state;

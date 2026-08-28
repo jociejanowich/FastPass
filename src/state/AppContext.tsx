@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { generateAssistantReply } from '../domain/assistantEngine';
 import { selectEmployeeViewModel } from '../domain/selectors';
-import type { TaskStatus } from '../domain/types';
+import type { TaskStatus, Viewer } from '../domain/types';
 import { createRepository } from '../data/repositoryFactory';
 import type { FastPassRepository } from '../data/FastPassRepository';
 import { createId } from '../utils/id';
@@ -170,6 +170,10 @@ export function AppProvider({
     dispatch({ type: 'assistant/reset' });
   }, []);
 
+  const setViewer = useCallback((viewer: Viewer) => {
+    dispatch({ type: 'viewer/set', payload: { viewer } });
+  }, []);
+
   useEffect(() => {
     if (autoLoad) {
       void load();
@@ -185,6 +189,7 @@ export function AppProvider({
         resetDemo,
         setTaskStatus,
         setTaskBlocker,
+        setViewer,
         sendAssistantMessage,
         resetAssistant,
       },
@@ -196,6 +201,7 @@ export function AppProvider({
       resetDemo,
       setTaskStatus,
       setTaskBlocker,
+      setViewer,
       sendAssistantMessage,
       resetAssistant,
     ],

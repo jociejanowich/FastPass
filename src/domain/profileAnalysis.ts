@@ -88,9 +88,9 @@ export interface ProfileAnalysis {
 
 export interface ProfileAnalysisInput {
   employee: Employee;
-  tasks: EmployeeTask[];
-  milestones: Milestone[];
-  resources: Resource[];
+  tasks: readonly EmployeeTask[];
+  milestones: readonly Milestone[];
+  resources: readonly Resource[];
   now?: string;
 }
 

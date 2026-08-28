@@ -1,6 +1,6 @@
 import type { AssistantCitation, AssistantIntent } from '../domain/assistantEngine';
 import type { SignalReading } from '../domain/signals';
-import type { Employee, EmployeeTask, Milestone, Resource } from '../domain/types';
+import type { Employee, EmployeeTask, Milestone, Resource, Viewer } from '../domain/types';
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -28,6 +28,8 @@ export interface AppState {
   signals: SignalReading[];
   lastRefreshed: string | null;
   mutating: boolean;
+  /** Signed-in identity. Managers additionally see the Team dashboard. */
+  viewer: Viewer;
   assistant: AssistantState;
 }
 
@@ -50,4 +52,5 @@ export type AppAction =
   | { type: 'snapshot/replaced'; payload: SnapshotPayload }
   | { type: 'assistant/message'; payload: { message: AssistantMessage } }
   | { type: 'assistant/processing'; payload: { processing: boolean } }
-  | { type: 'assistant/reset' };
+  | { type: 'assistant/reset' }
+  | { type: 'viewer/set'; payload: { viewer: Viewer } };

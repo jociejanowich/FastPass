@@ -55,7 +55,7 @@ export function AssistantPage(): JSX.Element {
 
       <SectionCard
         title="What your manager sees"
-        subtitle="Manager visibility runs through automated notifications — no separate dashboard to check."
+        subtitle="Your progress and any blockers appear on your manager's Team dashboard in real time. A weekly summary is also emailed."
       >
         {managerSummary ? (
           <div className={styles.previews}>

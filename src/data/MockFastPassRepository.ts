@@ -19,10 +19,12 @@ import type {
   Milestone,
   Resource,
   TaskStatus,
+  TeamOnboarding,
 } from '../domain/types';
 import type { FastPassDataSnapshot, FastPassRepository } from './FastPassRepository';
 import { MOCK_MILESTONES, MOCK_RESOURCES, cloneMockEmployee, cloneMockTasks } from './mockData';
 import { cloneMockSignals } from './mockSignals';
+import { cloneTeamMembers } from './mockTeam';
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -131,6 +133,16 @@ export class MockFastPassRepository implements FastPassRepository {
       this.resources,
       demoDateOffset(0),
     );
+  }
+
+  async getTeamOnboarding(managerName: string): Promise<TeamOnboarding> {
+    await delay(this.latencyMs);
+    // The signed-in employee is one of the manager's reports; their tasks come
+    // from live signal-derived state so the two views never disagree.
+    const self = { employee: { ...this.employee }, tasks: this.tasks.map((task) => ({ ...task })) };
+    const others = cloneTeamMembers();
+    const members = [self, ...others].filter((m) => m.employee.managerName === managerName);
+    return { managerName, members };
   }
 
   async refresh(): Promise<FastPassDataSnapshot> {

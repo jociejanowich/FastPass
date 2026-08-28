@@ -14,6 +14,7 @@ import type {
   Milestone,
   Resource,
   TaskStatus,
+  TeamOnboarding,
 } from '../domain/types';
 
 export interface FastPassDataSnapshot {
@@ -42,6 +43,11 @@ export interface FastPassRepository {
     description: string | null,
   ): Promise<EmployeeTask>;
   getManagerSummary(employeeId: string): Promise<ManagerSummary>;
+  /**
+   * Every direct report's onboarding data for a manager. In production this is
+   * scoped by the signed-in manager's identity (Graph `/me/directReports`).
+   */
+  getTeamOnboarding(managerName: string): Promise<TeamOnboarding>;
   /** Re-reads connected systems and returns a fresh, signal-derived snapshot. */
   refresh(): Promise<FastPassDataSnapshot>;
   /**

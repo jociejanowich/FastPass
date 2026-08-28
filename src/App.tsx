@@ -8,6 +8,7 @@ import { AssistantPage } from './pages/AssistantPage';
 import { MilestonesPage } from './pages/MilestonesPage';
 import { CareerPage } from './pages/CareerPage';
 import { AboutMePage } from './pages/AboutMePage';
+import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export function App(): JSX.Element {
@@ -26,6 +27,7 @@ export function App(): JSX.Element {
             <Route path="/milestones" element={<MilestonesPage />} />
             <Route path="/career" element={<CareerPage />} />
             <Route path="/about" element={<AboutMePage />} />
+            <Route path="/team" element={<ManagerDashboardPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AppShell>

@@ -129,12 +129,14 @@ export function selectRecommendedSteps(
 }
 
 function recommendedActionForBlocker(task: EmployeeTask): string {
-  switch (task.name) {
-    case 'Setup Laptop':
-      return 'Follow up on the open hardware request and request a loaner device so setup can continue.';
-    default:
-      return 'Escalate the blocker to your manager and use the linked resource to unblock it.';
+  const text = `${task.name} ${task.blockerDescription ?? ''}`.toLowerCase();
+  if (task.name === 'Setup Laptop' || /hardware|device|laptop|asset/.test(text)) {
+    return 'Follow up on the open hardware request and arrange a loaner device so setup can continue.';
   }
+  if (/access|approv|permission|repo|pipeline|workspace/.test(text)) {
+    return 'Identify the approver and approve or expedite the request; confirm the required approval chain.';
+  }
+  return 'Escalate the blocker to your manager and use the linked resource to unblock it.';
 }
 
 export function selectBlockers(

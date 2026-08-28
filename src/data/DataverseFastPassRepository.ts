@@ -28,6 +28,7 @@ import type {
   Milestone,
   Resource,
   TaskStatus,
+  TeamOnboarding,
 } from '../domain/types';
 import type { FastPassDataSnapshot, FastPassRepository } from './FastPassRepository';
 
@@ -82,6 +83,12 @@ export class DataverseFastPassRepository implements FastPassRepository {
   }
 
   async getManagerSummary(_employeeId: string): Promise<ManagerSummary> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async getTeamOnboarding(_managerName: string): Promise<TeamOnboarding> {
+    // Scope by the signed-in manager: Graph `/me/directReports`, then the
+    // fastpass_employeetask rows for each report.
     throw new Error(NOT_IMPLEMENTED);
   }
 

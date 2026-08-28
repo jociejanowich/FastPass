@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { TaskStatus } from '../domain/types';
+import type { TaskStatus, Viewer } from '../domain/types';
 import type { AppState } from './types';
 
 export interface AppActions {
@@ -12,6 +12,7 @@ export interface AppActions {
     blockerFlag: boolean,
     description: string | null,
   ) => Promise<void>;
+  setViewer: (viewer: Viewer) => void;
   sendAssistantMessage: (text: string) => Promise<void>;
   resetAssistant: () => void;
 }

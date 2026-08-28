@@ -1,12 +1,14 @@
 import {
   ArrowTrendingLinesRegular,
   HomeRegular,
+  PeopleTeamRegular,
   PersonStarRegular,
   SparkleRegular,
   TaskListSquareLtrRegular,
   FlagRegular,
 } from '@fluentui/react-icons';
 import type { ReactNode } from 'react';
+import type { ViewerRole } from './domain/types';
 
 export interface NavItem {
   key: string;
@@ -14,6 +16,8 @@ export interface NavItem {
   path: string;
   icon: ReactNode;
   description: string;
+  /** When set, only viewers with this role see the item. */
+  requiresRole?: ViewerRole;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -59,4 +63,16 @@ export const NAV_ITEMS: NavItem[] = [
     icon: <PersonStarRegular />,
     description: 'Your AI-generated development profile',
   },
+  {
+    key: 'team',
+    label: 'Team',
+    path: '/team',
+    icon: <PeopleTeamRegular />,
+    description: 'Onboarding progress and blockers across your reports',
+    requiresRole: 'manager',
+  },
 ];
+
+export function navItemsForRole(role: ViewerRole): NavItem[] {
+  return NAV_ITEMS.filter((item) => !item.requiresRole || item.requiresRole === role);
+}

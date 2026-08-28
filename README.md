@@ -33,6 +33,9 @@ src/
     signals.ts           completion-signal model (source, status, reading)
     detection.ts         task -> signal rules; applySignalsToTasks (auto status)
     connectedSystems.ts  "Connected systems" panel view model
+    profileAnalysis.ts   "About Me" analysis engine (strengths, risks, career)
+    managerView.ts       Team dashboard: buildManagerDashboard (attention queue,
+                          roster, totals) — reuses the selectors above
     selectors.ts          derived view models (EmployeeViewModel, MilestoneViewModel,
                           BlockerViewModel, ManagerSummary)
     assistantEngine.ts    deterministic local "mock response engine"
@@ -40,7 +43,10 @@ src/
   data/            data-service layer
     FastPassRepository.ts          the interface every page depends on
     mockData.ts                   the demo data set (one place)
+    mockTeam.ts                   extra direct reports for the Team dashboard
     mockSignals.ts                simulated readings from connected systems
+    viewers.ts                    signed-in identities (employee / manager)
+    ProfileAnalysisService.ts     About Me analysis seam (local | Power Automate)
     MockFastPassRepository.ts      in-memory, signal-driven implementation
     DataverseFastPassRepository.ts placeholder adapter (same interface)
     MicrosoftGraphProfileAdapter.ts placeholder profile adapter
@@ -156,6 +162,7 @@ No environment file is needed — it runs entirely on mock data.
 | `/milestones` | Milestone accordion + "Ready for Production Work" summary                                     |
 | `/career`     | Career journey — timeline, role guidance, readiness outlook                                   |
 | `/about`      | About Me — AI-generated development profile + upcoming-risk detection                         |
+| `/team`       | Manager-only — team progress, attention queue, per-report detail (gated for employees)        |
 | `*`           | Polished not-found page                                                                       |
 
 ---
@@ -212,18 +219,37 @@ tasks, milestones, resources) as grounding data and keep the `AssistantReply` sh
 
 ---
 
-## Manager notification preview
+## Manager (Team) dashboard
 
-FastPass has **no separate manager dashboard**. Manager visibility is represented by
-two reusable preview components in `src/components/ManagerEmailPreview.tsx`:
+`/team` is a **manager-only** screen that replaces the blocker-alert and
+daily-summary emails with live visibility across a manager's direct reports.
+Employees never see it: the nav item is hidden and the route renders a
+"Manager access only" gate for non-managers.
 
-- **`ManagerBlockerAlert`** — automated alert: employee, blocked task, due date,
-  blocker detail, recommended manager action.
-- **`ManagerDailySummary`** — daily digest: profile, progress, journey status,
-  blockers, priority tasks, completed tasks, recommended actions.
+`domain/managerView.ts` — `buildManagerDashboard(team, …)` — is pure and reuses
+the employee-side selectors and the profile risk analysis, so the two views can
+never disagree. It produces:
 
-Both render from `selectManagerSummary()` and appear on the Assistant page under
-"What your manager sees".
+- **Team overview** — reports, need-attention, blocked, overdue tasks, average
+  progress, ready-for-work.
+- **Needs your attention** — a single prioritized queue of every blocker,
+  overdue task, and predicted-HIGH risk across the team, high severity first,
+  one item per (report, task). Each carries the detail and a recommended action.
+- **Your reports** — one card per report (status pill, progress, milestone,
+  blocker/overdue/risk chips), sorted by who needs the manager most; "View
+  details" opens a drawer with the full daily-summary content (blockers, risks,
+  priority tasks, completed tasks, recommended manager actions).
+- **Weekly summary email** — still available as an opt-in Monday digest (toggle
+  persisted to `localStorage`), previewed inline.
+
+**Who is signed in:** `state.viewer` (`data/viewers.ts`) — an account switcher in
+the top bar toggles Employee ⇄ Manager. In production the viewer and role come
+from the authenticated Entra ID session (`directReports` / group membership);
+`getTeamOnboarding()` is scoped to the signed-in manager.
+
+The reusable email-style previews (`ManagerBlockerAlert`, `ManagerDailySummary`
+in `components/ManagerEmailPreview.tsx`) still render on the Assistant page under
+"What your manager sees", so an employee can see exactly what their manager gets.
 
 ---
 
@@ -364,14 +390,17 @@ State is in-memory, so a full page reload restores the seed state. For tests,
 
 ## Known MVP limitations
 
-- Single hard-coded employee; no authentication.
+- No authentication — the viewer (and Employee/Manager role) is a top-bar switch.
 - State is in-memory only — a full page reload restores the seed state (SPA
   navigation preserves changes within a session).
+- The other three direct reports on the Team dashboard are static seed data;
+  only the signed-in employee's data is live.
 - The Dataverse and Graph adapters are typed placeholders that throw if selected.
 - The assistant is keyword-routed, not a language model.
 - The Career Journey page reflects a first-year path, not a per-employee plan.
-- `getManagerSummary` is computed client-side from the same state; a real system
-  would generate and send it server-side on a schedule.
+- The manager view is computed client-side from the same data; a real system
+  would scope `getTeamOnboarding` server-side and send the weekly digest on a
+  schedule.
 
 ---
 
@@ -391,3 +420,8 @@ State is in-memory, so a full page reload restores the seed state. For tests,
    manager previews.
 5. **Career Journey** — the five-stage timeline, role-based guidance, and readiness
    outlook.
+6. **About Me** — the AI-generated development profile and the upcoming-risk cards.
+7. **Team** — switch the top-bar account to **Priya Anand (Manager)**: the Team
+   nav item appears. The dashboard shows four reports at different stages, an
+   attention queue (blockers + overdue + predicted risks), and per-report drill-in.
+   Switch back to **Cesar Martinez (Employee)** and open `/team` — it's gated.
