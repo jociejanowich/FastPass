@@ -314,26 +314,122 @@ fallback.
 
 ## Replacing `MockFastPassRepository` with Dataverse
 
-1. Implement `DataverseFastPassRepository` (`src/data/DataverseFastPassRepository.ts`)
-   against the `FastPassRepository` interface. The file documents suggested table
-   names and the mapping approach. Translate Dataverse option sets and GUIDs into the
-   string unions and ids used by `domain/types.ts` — **never leak GUIDs or OData
-   annotations into domain objects or the UI**.
-2. Add MSAL (or the Power Platform connector) for tokens on the
-   `${environmentUrl}/.default` scope.
-3. Set `VITE_FASTPASS_DATA_SOURCE=dataverse` and `VITE_DATAVERSE_ENVIRONMENT_URL`
-   (plus client/tenant ids). `repositoryFactory.ts` will construct the Dataverse
-   adapter; if the URL is missing it logs a warning and falls back to mock.
-4. No page or component changes are required — they depend only on the interface.
+FastPass runs as a **Power Platform "Code App"** — a pro-code React/Vite app hosted
+by Power Platform, using Microsoft's official
+[`@microsoft/power-apps`](https://www.npmjs.com/package/@microsoft/power-apps) client
+library (already a real dependency in `package.json`, not a placeholder) for
+Dataverse access and identity. There is no separate MSAL/OAuth setup to write — Code
+Apps run inside an already-authenticated Power Platform session and hand the app a
+ready-to-use data client and user context.
+
+**Already implemented, against the real SDK types:**
+
+- `src/data/dataverseSchema.ts` — the four-table schema (`fastpass_employees`,
+  `fastpass_employeetasks`, `fastpass_milestones`, `fastpass_resources`) and the
+  row ⇄ domain-type mappers. Comments explain each modeling choice (e.g. text
+  columns instead of Choice columns, to avoid unknowable numeric option-set ids).
+- `src/data/DataverseFastPassRepository.ts` — a full `FastPassRepository`
+  implementation built on `getContext()` (from `@microsoft/power-apps/app`) and
+  `getClient()` (from `@microsoft/power-apps/data`): reads use
+  `retrieveMultipleRecordsAsync`/`retrieveRecordAsync` with OData `$filter`
+  expressions, writes use `updateRecordAsync`, and `getManagerSummary` reuses the
+  same `selectManagerSummary` domain logic the mock uses.
+- `src/data/repositoryFactory.ts` — already wired: set
+  `VITE_FASTPASS_DATA_SOURCE=dataverse` and it constructs the Dataverse adapter,
+  falling back to mock with a console warning if not configured yet.
+
+**The one piece that can't be authored ahead of time:** `getClient()` needs a
+`dataSourcesInfo` object describing your environment's actual tables (their
+Dataverse table ids, columns, and generated API shape). That object doesn't exist
+until the Power Platform CLI generates it against a *real, signed-in* environment —
+see `src/data/powerAppsDataSources.ts` for the exact hand-off point, and "Connecting
+a real Power Platform environment" below for the commands that produce it.
+
+No page or component changes are required either way — they depend only on the
+`FastPassRepository` interface.
 
 ### Where a Microsoft Graph adapter fits
 
-`getCurrentEmployee()` in the Dataverse adapter should call
-`MicrosoftGraphProfileAdapter` (`src/data/MicrosoftGraphProfileAdapter.ts`) for
-identity and profile fields (`displayName`, `jobTitle`, `department`, manager), then
-merge the onboarding-specific fields (`journeyStatus`, `currentMilestone`,
-`startDate`) from Dataverse. Scopes: `User.Read` (self) or `User.Read.All` (manager
-viewing a report).
+`Employee.role`, `.department`, and manager name currently live on the
+`fastpass_employees` Dataverse row. If those should instead be sourced live from
+Entra ID/Graph (so they always match the org chart), have `getCurrentEmployee()`
+call `MicrosoftGraphProfileAdapter` (`src/data/MicrosoftGraphProfileAdapter.ts`) for
+those fields and merge in the onboarding-specific fields (`journeyStatus`,
+`currentMilestone`, `startDate`) from Dataverse. Scopes: `User.Read` (self) or
+`User.Read.All` (manager viewing a report).
+
+### Connecting a real Power Platform environment
+
+Everything above is real code sitting in this repo; it needs your own Power Platform
+tenant to run against. These steps use your own Microsoft 365 sign-in and can't be
+done from here — run them yourself, in order:
+
+**1. Install the Power Platform CLI (`pac`)** — a .NET global tool, not an npm
+package:
+
+```bash
+dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+```
+
+(No .NET SDK? Install it first from
+[dotnet.microsoft.com/download](https://dotnet.microsoft.com/download), or install
+`pac` via the "Power Platform Tools" VS Code extension instead — either way you end
+up with a `pac` command on your PATH.)
+
+**2. Sign in to your Power Platform environment:**
+
+```bash
+pac auth create --environment <your-environment-url>
+```
+
+This opens a browser for your normal Microsoft 365 login. Use (or create) an
+environment that has a **Dataverse database provisioned** — Code Apps require one.
+If your org doesn't have one yet: [make.powerapps.com](https://make.powerapps.com) →
+environment picker → "New environment" → check "Add a Dataverse database".
+
+**3. Create the four tables** in that environment — [make.powerapps.com](https://make.powerapps.com)
+→ your environment → Tables → New table, for each of `fastpass_employees`,
+`fastpass_employeetasks`, `fastpass_milestones`, `fastpass_resources` — using the
+column names documented at the top of `src/data/dataverseSchema.ts`.
+
+**4. From this project's root, initialize it as a Code App and connect the tables:**
+
+```bash
+pac code init --displayName "FastPass"
+pac code add-data-source --dataSource dataverse --table fastpass_employees
+pac code add-data-source --dataSource dataverse --table fastpass_employeetasks
+pac code add-data-source --dataSource dataverse --table fastpass_milestones
+pac code add-data-source --dataSource dataverse --table fastpass_resources
+```
+
+Each `add-data-source` call generates the schema/type information for that table
+into the project. Copy (or import) the resulting `dataSourcesInfo` object into
+`src/data/powerAppsDataSources.ts`, replacing the placeholder `throw`.
+
+**5. Run it locally against the real environment, then publish:**
+
+```bash
+npm run dev              # VITE_FASTPASS_DATA_SOURCE=dataverse in your .env.local
+pac code push            # publishes the Code App into Power Platform
+```
+
+`pac code push` gives you a `https://apps.powerapps.com/play/...` URL your
+organization can open directly — no GitHub Pages involved for this path.
+
+**Optional — do this from Claude Code or GitHub Copilot CLI instead of raw `pac`
+commands:** Microsoft publishes an official plugin marketplace with a Code Apps
+skill that wraps the same workflow:
+
+```bash
+/plugin marketplace add microsoft/power-platform-skills
+/plugin install code-apps-preview@power-platform-skills
+```
+
+Run those two commands inside an interactive Claude Code or Copilot CLI session on
+your own machine (not from within this conversation — they add plugins to *your*
+CLI installation). Once installed, the skill can drive `pac code init` /
+`add-data-source` / `push` for you conversationally, still using your own `pac auth`
+sign-in from step 2.
 
 ### Where a real AI service fits
 
@@ -349,7 +445,10 @@ Two seams, both already isolated:
 
 - The demo needs **none**. `.env.example` documents every variable.
 - All client variables are prefixed `VITE_`.
-- `VITE_FASTPASS_DATA_SOURCE` (`mock` | `dataverse`) selects the repository.
+- `VITE_FASTPASS_DATA_SOURCE` (`mock` | `dataverse`) selects the repository. The
+  Dataverse path needs no client/tenant id env vars — Code Apps supply an
+  already-authenticated data client at runtime (see "Connecting a real Power
+  Platform environment" above).
 - `VITE_ASSISTANT_ENGINE` (`mock` | `azure-openai` | `copilot-studio`) is reserved
   for the assistant swap.
 - `VITE_PROFILE_ANALYSIS` (`mock` | `power-automate`) + `VITE_PROFILE_FLOW_URL`

@@ -6,21 +6,22 @@
 import { DataverseFastPassRepository } from './DataverseFastPassRepository';
 import type { FastPassRepository } from './FastPassRepository';
 import { MockFastPassRepository } from './MockFastPassRepository';
+import { getDataSourcesInfo } from './powerAppsDataSources';
 
 export function createRepository(): FastPassRepository {
   const source = import.meta.env.VITE_FASTPASS_DATA_SOURCE ?? 'mock';
 
   if (source === 'dataverse') {
-    const environmentUrl = import.meta.env.VITE_DATAVERSE_ENVIRONMENT_URL ?? '';
-    const clientId = import.meta.env.VITE_DATAVERSE_CLIENT_ID ?? '';
-    const tenantId = import.meta.env.VITE_DATAVERSE_TENANT_ID ?? '';
-    if (!environmentUrl) {
+    try {
+      return new DataverseFastPassRepository(getDataSourcesInfo());
+    } catch (error) {
       console.warn(
-        '[FastPass] VITE_FASTPASS_DATA_SOURCE=dataverse but VITE_DATAVERSE_ENVIRONMENT_URL is not set. Falling back to mock data.',
+        '[FastPass] VITE_FASTPASS_DATA_SOURCE=dataverse but the data source is not configured ' +
+          'yet (see powerAppsDataSources.ts). Falling back to mock data.',
+        error,
       );
       return new MockFastPassRepository();
     }
-    return new DataverseFastPassRepository({ environmentUrl, clientId, tenantId });
   }
 
   return new MockFastPassRepository();
