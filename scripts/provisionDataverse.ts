@@ -18,6 +18,8 @@
  *   --wipe                                 delete existing FastPass rows first
  *   --client-id <guid>                     override the auth client id
  *   --tenant <guid|domain>                 override the tenant (default: organizations)
+ *   --token <bearer>                       use a pre-acquired token, skip sign-in
+ *                                          (e.g. from `az account get-access-token`)
  *
  * Auth is an interactive device-code sign-in printed to the console — open the
  * URL on any device (e.g. your Surface Pro), enter the code, done. Nothing is
@@ -42,6 +44,8 @@ function flag(name: string): boolean {
 
 const ORG_URL = (arg('url') ?? '').replace(/\/+$/, '');
 const ME_UPN = arg('me');
+/** Pre-acquired bearer token; skips the built-in device-code sign-in. */
+const TOKEN_ARG = arg('token');
 const SCHEMA_ONLY = flag('schema-only');
 const DATA_ONLY = flag('data-only');
 const WIPE = flag('wipe');
@@ -522,7 +526,7 @@ async function loadData() {
 
 async function main() {
   console.log(`FastPass → ${ORG_URL}\n`);
-  TOKEN = await getToken();
+  TOKEN = TOKEN_ARG ?? (await getToken());
   await waOk('GET', 'WhoAmI'); // fail fast if the token can't hit Dataverse
 
   if (!DATA_ONLY) await ensureSchema();
