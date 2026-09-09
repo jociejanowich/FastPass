@@ -362,39 +362,47 @@ those fields and merge in the onboarding-specific fields (`journeyStatus`,
 
 Everything above is real code sitting in this repo; it needs your own Power Platform
 tenant to run against. These steps use your own Microsoft 365 sign-in and can't be
-done from here — run them yourself, in order:
+done from here — run them yourself, in order.
 
-**1. Install the Power Platform CLI (`pac`)** — a .NET global tool, not an npm
-package:
+**1. Have a Dataverse environment.** [make.powerapps.com](https://make.powerapps.com)
+→ environment picker → confirm you have one whose type is Developer/Sandbox/etc.
+*with a Dataverse database*. If not: "New environment" → check "Add a Dataverse
+database". Note its URL (gear icon → Session details → "Instance url"), e.g.
+`https://org12345.crm.dynamics.com`.
+
+**2. Provision the tables and demo data — one command:**
+
+```bash
+npm run provision:dataverse -- --url https://org12345.crm.dynamics.com
+```
+
+`scripts/provisionDataverse.ts` signs you in with an interactive device code
+(printed to the console — open the URL on any device, e.g. your work laptop, enter
+the code), then creates all four tables, every column, the Employee lookup, and
+loads the exact demo dataset imported straight from `src/data` — Cesar Martinez
+keyed to your own sign-in, Jim McDonnell's team, every task, milestone, and
+resource. Re-runnable; add `--wipe` to clear existing rows first, `--schema-only`
+or `--data-only` to do just one half. The Cesar row is keyed to the signed-in user
+by default; pass `--me someone@company.com` to override.
+
+Build these four tables by hand instead if you prefer — the column names and types
+are all documented in `src/data/dataverseSchema.ts`.
+
+**3. Install the Power Platform CLI (`pac`)** — a .NET global tool, not an npm
+package (only needed to *publish* the app; step 2 doesn't use it):
 
 ```bash
 dotnet tool install --global Microsoft.PowerApps.CLI.Tool
 ```
 
-(No .NET SDK? Install it first from
+(No .NET SDK? Install it from
 [dotnet.microsoft.com/download](https://dotnet.microsoft.com/download), or install
-`pac` via the "Power Platform Tools" VS Code extension instead — either way you end
-up with a `pac` command on your PATH.)
+`pac` via the "Power Platform Tools" VS Code extension.)
 
-**2. Sign in to your Power Platform environment:**
-
-```bash
-pac auth create --environment <your-environment-url>
-```
-
-This opens a browser for your normal Microsoft 365 login. Use (or create) an
-environment that has a **Dataverse database provisioned** — Code Apps require one.
-If your org doesn't have one yet: [make.powerapps.com](https://make.powerapps.com) →
-environment picker → "New environment" → check "Add a Dataverse database".
-
-**3. Create the four tables** in that environment — [make.powerapps.com](https://make.powerapps.com)
-→ your environment → Tables → New table, for each of `fastpass_employees`,
-`fastpass_employeetasks`, `fastpass_milestones`, `fastpass_resources` — using the
-column names documented at the top of `src/data/dataverseSchema.ts`.
-
-**4. From this project's root, initialize it as a Code App and connect the tables:**
+**4. Initialize the project as a Code App and connect the tables:**
 
 ```bash
+pac auth create --environment https://org12345.crm.dynamics.com
 pac code init --displayName "FastPass"
 pac code add-data-source --dataSource dataverse --table fastpass_employees
 pac code add-data-source --dataSource dataverse --table fastpass_employeetasks
@@ -409,7 +417,8 @@ into the project. Copy (or import) the resulting `dataSourcesInfo` object into
 **5. Run it locally against the real environment, then publish:**
 
 ```bash
-npm run dev              # VITE_FASTPASS_DATA_SOURCE=dataverse in your .env.local
+echo "VITE_FASTPASS_DATA_SOURCE=dataverse" > .env.local
+npm run dev
 pac code push            # publishes the Code App into Power Platform
 ```
 

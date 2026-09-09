@@ -58,15 +58,22 @@ export const DATAVERSE_TABLES = {
 
 export interface DataverseEmployeeRow {
   fastpass_employeeid: string;
+  /** The Employee table's primary column — the employee code, e.g. "EMP-001". */
   fastpass_employeecode: string;
-  fastpass_displayname: string;
+  /** Separate "Full Name" column — the person's display name. */
+  fastpass_fullname: string;
   fastpass_role: string;
   fastpass_department: string;
   fastpass_team: string;
   fastpass_managername: string;
-  fastpass_journeystatus: JourneyStatus;
-  fastpass_progresspercentage: number;
-  fastpass_currentmilestone: string;
+  /**
+   * The app derives journey status, progress %, and current milestone live
+   * from task state, so these three columns are optional — create them only
+   * if you want a stored fallback for when task data hasn't loaded yet.
+   */
+  fastpass_journeystatus?: JourneyStatus | null;
+  fastpass_progresspercentage?: number | null;
+  fastpass_currentmilestone?: string | null;
   fastpass_startdate: string;
   fastpass_lastactivitydate: string;
   fastpass_userprincipalname: string;
@@ -75,7 +82,8 @@ export interface DataverseEmployeeRow {
 export interface DataverseEmployeeTaskRow {
   fastpass_employeetaskid: string;
   _fastpass_employee_value: string;
-  fastpass_name: string;
+  /** Dedicated "Task Name" column (the table's primary column is locked). */
+  fastpass_taskname: string;
   fastpass_description: string;
   fastpass_status: TaskStatus;
   fastpass_duedate: string | null;
@@ -90,7 +98,13 @@ export interface DataverseEmployeeTaskRow {
 
 export interface DataverseMilestoneRow {
   fastpass_milestoneid: string;
-  fastpass_name: string;
+  /**
+   * Stable business key, e.g. "account-setup" — the app orders milestones by
+   * these codes and they are the `Milestone.id` the UI expects, not the GUID.
+   */
+  fastpass_milestonecode: string;
+  /** Dedicated "Milestone Name" column (the table's primary column is locked). */
+  fastpass_milestonename: string;
   fastpass_description: string;
   /** One task name per line. */
   fastpass_tasknames: string;
@@ -98,7 +112,13 @@ export interface DataverseMilestoneRow {
 
 export interface DataverseResourceRow {
   fastpass_resourceid: string;
-  fastpass_name: string;
+  /**
+   * Stable business key, e.g. "res-it-portal" — matched against a task's
+   * `recommendedResourceId`, so it is the `Resource.id` the UI expects.
+   */
+  fastpass_resourcecode: string;
+  /** Dedicated "Resource Name" column (the table's primary column is locked). */
+  fastpass_resourcename: string;
   fastpass_description: string;
   fastpass_type: ResourceType;
   fastpass_url: string;
@@ -110,14 +130,14 @@ export function toEmployee(row: DataverseEmployeeRow): Employee {
   return {
     id: row.fastpass_employeeid,
     employeeId: row.fastpass_employeecode,
-    displayName: row.fastpass_displayname,
+    displayName: row.fastpass_fullname,
     role: row.fastpass_role,
     department: row.fastpass_department,
     team: row.fastpass_team,
     managerName: row.fastpass_managername,
-    journeyStatus: row.fastpass_journeystatus,
-    progressPercentage: row.fastpass_progresspercentage,
-    currentMilestone: row.fastpass_currentmilestone,
+    journeyStatus: row.fastpass_journeystatus ?? 'Not Started',
+    progressPercentage: row.fastpass_progresspercentage ?? 0,
+    currentMilestone: row.fastpass_currentmilestone ?? '',
     startDate: row.fastpass_startdate,
     lastActivityDate: row.fastpass_lastactivitydate,
   };
@@ -127,7 +147,7 @@ export function toEmployeeTask(row: DataverseEmployeeTaskRow): EmployeeTask {
   return {
     id: row.fastpass_employeetaskid,
     employeeId: row._fastpass_employee_value,
-    name: row.fastpass_name,
+    name: row.fastpass_taskname,
     description: row.fastpass_description,
     status: row.fastpass_status,
     dueDate: row.fastpass_duedate,
@@ -143,8 +163,8 @@ export function toEmployeeTask(row: DataverseEmployeeTaskRow): EmployeeTask {
 
 export function toMilestone(row: DataverseMilestoneRow): Milestone {
   return {
-    id: row.fastpass_milestoneid as MilestoneId,
-    name: row.fastpass_name,
+    id: row.fastpass_milestonecode as MilestoneId,
+    name: row.fastpass_milestonename,
     description: row.fastpass_description,
     taskNames: splitLines(row.fastpass_tasknames),
   };
@@ -152,8 +172,8 @@ export function toMilestone(row: DataverseMilestoneRow): Milestone {
 
 export function toResource(row: DataverseResourceRow): Resource {
   return {
-    id: row.fastpass_resourceid,
-    name: row.fastpass_name,
+    id: row.fastpass_resourcecode,
+    name: row.fastpass_resourcename,
     description: row.fastpass_description,
     type: row.fastpass_type,
     url: row.fastpass_url,
