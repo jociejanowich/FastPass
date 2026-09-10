@@ -392,10 +392,15 @@ async function ensureSchema() {
 async function employeeNavProp(): Promise<string> {
   const r = await waOk(
     'GET',
-    `RelationshipDefinitions/Microsoft.Dynamics.CRM.OneToManyRelationshipMetadata(SchemaName='${LOOKUP.relationshipSchema}')?$select=ReferencingEntityNavigationPropertyName`,
+    `EntityDefinitions(LogicalName='${LOOKUP.referencing}')/ManyToOneRelationships?$select=SchemaName,ReferencingEntityNavigationPropertyName`,
   );
-  return (r.json as { ReferencingEntityNavigationPropertyName: string })
-    .ReferencingEntityNavigationPropertyName;
+  const rels = (
+    r.json as { value: { SchemaName: string; ReferencingEntityNavigationPropertyName: string }[] }
+  ).value;
+  const match = rels.find((rel) => rel.SchemaName === LOOKUP.relationshipSchema);
+  if (!match)
+    throw new Error(`relationship ${LOOKUP.relationshipSchema} not found on ${LOOKUP.referencing}`);
+  return match.ReferencingEntityNavigationPropertyName;
 }
 
 /* -------------------------------------------------------------------------- */
