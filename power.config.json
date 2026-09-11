@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "appId": null,
+  "appDisplayName": "FastPass",
+  "region": "prod",
+  "appType": "CodeApp",
+  "environmentId": "b0495402-d15d-e7ae-a7d7-dd311edd460f",
+  "description": " ",
+  "buildPath": "./dist",
+  "buildEntryPoint": "index.html",
+  "localAppUrl": "http://localhost:5173",
+  "logoPath": "Default",
+  "connectionReferences": {},
+  "databaseReferences": {
+    "default.cds": {
+      "dataSources": {
+        "employees": {
+          "entitySetName": "fastpass_employees",
+          "logicalName": "fastpass_employee",
+          "isHidden": false
+        },
+        "employeetasks": {
+          "entitySetName": "fastpass_employeetasks",
+          "logicalName": "fastpass_employeetask",
+          "isHidden": false
+        },
+        "milestones": {
+          "entitySetName": "fastpass_milestones",
+          "logicalName": "fastpass_milestone",
+          "isHidden": false
+        },
+        "resources": {
+          "entitySetName": "fastpass_resources",
+          "logicalName": "fastpass_resource",
+          "isHidden": false
+        }
+      },
+      "environmentVariableName": ""
+    }
+  }
+}

@@ -1,33 +1,21 @@
 /**
- * Dataverse adapter, built against the real Power Apps Code Apps client SDK
- * (`@microsoft/power-apps`, https://www.npmjs.com/package/@microsoft/power-apps).
+ * Dataverse adapter, built on the generated services `pa app add data-source`
+ * produces (see src/generated/) — Microsoft's official Power Apps CLI for
+ * Code Apps (https://aka.ms/pacodeapps). Each generated `<Table>Service`
+ * wraps the real `@microsoft/power-apps` data client with typed
+ * create/get/getAll/update/delete methods for that table; this file maps
+ * those onto the FastPassRepository contract and the app's domain types.
  *
- * This is genuine integration code, not a stub — `getContext()` (from
- * `@microsoft/power-apps/app`) and `getClient()` (from
- * `@microsoft/power-apps/data`) are the SDK's actual exported APIs. What it
- * cannot do
- * from this repository is supply `dataSourcesInfo`: that value is generated
- * into the project by running `pac code add-data-source` against a real,
- * signed-in-to Power Platform environment (see the README's "Connecting to
- * a real Dataverse environment" section), which requires the user's own
- * tenant and credentials. Everything downstream of that one hand-off point
- * is implemented here for real.
- *
- * Table/column names and the row -> domain mapping live in dataverseSchema.ts.
+ * `src/generated/**` mirrors exactly what `pa app add data-source` writes
+ * into a real project — regenerate it there with:
+ *   pa app add data-source --connector dataverse --table fastpass_employee
+ *   pa app add data-source --connector dataverse --table fastpass_employeetask
+ *   pa app add data-source --connector dataverse --table fastpass_milestone
+ *   pa app add data-source --connector dataverse --table fastpass_resource
  */
 
 import { getContext } from '@microsoft/power-apps/app';
-import { getClient } from '@microsoft/power-apps/data';
-import type { DataClient } from '@microsoft/power-apps/data';
-
-/**
- * `DataSourcesInfo` (the config object `pac code add-data-source` generates)
- * is not part of this package's public type exports in 1.3.1 — it only
- * exists under an internal subpath. Deriving it from `getClient`'s own
- * parameter type keeps this file exact against whatever version is
- * installed without importing an `internal/*` module.
- */
-type DataSourcesInfo = Parameters<typeof getClient>[0];
+import type { IOperationResult } from '@microsoft/power-apps/data';
 
 import { applySignalsToTasks } from '../domain/detection';
 import { selectManagerSummary } from '../domain/selectors';
@@ -35,33 +23,27 @@ import type { SignalReading } from '../domain/signals';
 import type {
   Employee,
   EmployeeTask,
+  JourneyStatus,
   ManagerSummary,
   Milestone,
+  MilestoneId,
   Resource,
+  ResourceType,
   TaskStatus,
   TeamOnboarding,
 } from '../domain/types';
+import type { Fastpass_employees } from '../generated/models/Fastpass_employeesModel';
+import type { Fastpass_employeetasks } from '../generated/models/Fastpass_employeetasksModel';
+import type { Fastpass_milestones } from '../generated/models/Fastpass_milestonesModel';
+import type { Fastpass_resources } from '../generated/models/Fastpass_resourcesModel';
+import { Fastpass_employeesService } from '../generated/services/Fastpass_employeesService';
+import { Fastpass_employeetasksService } from '../generated/services/Fastpass_employeetasksService';
+import { Fastpass_milestonesService } from '../generated/services/Fastpass_milestonesService';
+import { Fastpass_resourcesService } from '../generated/services/Fastpass_resourcesService';
 import type { FastPassDataSnapshot, FastPassRepository } from './FastPassRepository';
-import {
-  DATAVERSE_TABLES,
-  type DataverseEmployeeRow,
-  type DataverseEmployeeTaskRow,
-  type DataverseMilestoneRow,
-  type DataverseResourceRow,
-  odataString,
-  toEmployee,
-  toEmployeeTask,
-  toMilestone,
-  toResource,
-} from './dataverseSchema';
 
 export class DataverseFastPassRepository implements FastPassRepository {
-  private readonly client: DataClient;
   private currentEmployeeId: string | null = null;
-
-  constructor(dataSourcesInfo: DataSourcesInfo) {
-    this.client = getClient(dataSourcesInfo);
-  }
 
   async getCurrentEmployee(): Promise<Employee> {
     const context = await getContext();
@@ -71,14 +53,14 @@ export class DataverseFastPassRepository implements FastPassRepository {
         'getContext() returned no userPrincipalName; cannot resolve the signed-in employee.',
       );
     }
-    const result = await this.client.retrieveMultipleRecordsAsync<DataverseEmployeeRow>(
-      DATAVERSE_TABLES.employee,
-      { filter: `fastpass_userprincipalname eq '${odataString(upn)}'`, top: 1 },
+    const rows = unwrap(
+      await Fastpass_employeesService.getAll({
+        filter: `fastpass_userprincipalname eq '${odataString(upn)}'`,
+        top: 1,
+      }),
+      'getCurrentEmployee',
     );
-    if (!result.success) {
-      throw toError(result.error, 'getCurrentEmployee');
-    }
-    const row = result.data[0];
+    const row = rows[0];
     if (!row) {
       throw new Error(`No fastpass_employees row found for userPrincipalName "${upn}".`);
     }
@@ -87,59 +69,39 @@ export class DataverseFastPassRepository implements FastPassRepository {
   }
 
   async getEmployeeTasks(employeeId: string): Promise<EmployeeTask[]> {
-    const result = await this.client.retrieveMultipleRecordsAsync<DataverseEmployeeTaskRow>(
-      DATAVERSE_TABLES.employeeTask,
-      { filter: `_fastpass_employee_value eq '${odataString(employeeId)}'` },
+    const rows = unwrap(
+      await Fastpass_employeetasksService.getAll({
+        filter: `_fastpass_employee_value eq '${odataString(employeeId)}'`,
+      }),
+      'getEmployeeTasks',
     );
-    if (!result.success) {
-      throw toError(result.error, 'getEmployeeTasks');
-    }
-    return result.data.map(toEmployeeTask);
+    return rows.map(toTask);
   }
 
   async getMilestones(): Promise<Milestone[]> {
-    const result = await this.client.retrieveMultipleRecordsAsync<DataverseMilestoneRow>(
-      DATAVERSE_TABLES.milestone,
-    );
-    if (!result.success) {
-      throw toError(result.error, 'getMilestones');
-    }
-    return result.data.map(toMilestone);
+    const rows = unwrap(await Fastpass_milestonesService.getAll(), 'getMilestones');
+    return rows.map(toMilestone);
   }
 
   async getResources(): Promise<Resource[]> {
-    const result = await this.client.retrieveMultipleRecordsAsync<DataverseResourceRow>(
-      DATAVERSE_TABLES.resource,
-    );
-    if (!result.success) {
-      throw toError(result.error, 'getResources');
-    }
-    return result.data.map(toResource);
+    const rows = unwrap(await Fastpass_resourcesService.getAll(), 'getResources');
+    return rows.map(toResource);
   }
 
   async getSignals(_employeeId: string): Promise<SignalReading[]> {
     // Signals come from connected systems (Microsoft Graph, Intune, the LMS,
-    // the ITSM tool) rather than Dataverse. Each of those is a separate
-    // adapter with its own auth/connector, out of scope for this repository;
+    // the ITSM tool) rather than Dataverse — out of scope for this adapter;
     // until one is wired in, tasks fall back to their stored fastpass_status.
     return [];
   }
 
   async updateTaskStatus(taskId: string, status: TaskStatus): Promise<EmployeeTask> {
-    const changes: Partial<DataverseEmployeeTaskRow> = {
+    await Fastpass_employeetasksService.update(taskId, {
       fastpass_status: status,
-      fastpass_completeddate: status === 'Completed' ? new Date().toISOString() : null,
+      fastpass_completeddate: status === 'Completed' ? new Date().toISOString() : undefined,
       fastpass_blockerflag: status === 'Blocked',
-      fastpass_blockerdescription: status === 'Blocked' ? undefined : null,
-    };
-    const result = await this.client.updateRecordAsync<
-      Partial<DataverseEmployeeTaskRow>,
-      DataverseEmployeeTaskRow
-    >(DATAVERSE_TABLES.employeeTask, taskId, changes);
-    if (!result.success) {
-      throw toError(result.error, 'updateTaskStatus');
-    }
-    return this.retrieveTask(taskId);
+    });
+    return toTask(unwrap(await Fastpass_employeetasksService.get(taskId), 'updateTaskStatus'));
   }
 
   async updateTaskBlocker(
@@ -147,41 +109,39 @@ export class DataverseFastPassRepository implements FastPassRepository {
     blockerFlag: boolean,
     description: string | null,
   ): Promise<EmployeeTask> {
-    const changes: Partial<DataverseEmployeeTaskRow> = {
+    await Fastpass_employeetasksService.update(taskId, {
       fastpass_blockerflag: blockerFlag,
-      fastpass_blockerdescription: blockerFlag ? description : null,
+      fastpass_blockerdescription: blockerFlag ? (description ?? undefined) : undefined,
       fastpass_status: blockerFlag ? 'Blocked' : 'In Progress',
-    };
-    const result = await this.client.updateRecordAsync<
-      Partial<DataverseEmployeeTaskRow>,
-      DataverseEmployeeTaskRow
-    >(DATAVERSE_TABLES.employeeTask, taskId, changes);
-    if (!result.success) {
-      throw toError(result.error, 'updateTaskBlocker');
-    }
-    return this.retrieveTask(taskId);
+    });
+    return toTask(unwrap(await Fastpass_employeetasksService.get(taskId), 'updateTaskBlocker'));
   }
 
   async getManagerSummary(employeeId: string): Promise<ManagerSummary> {
-    const [employee, tasks, milestones, resources] = await Promise.all([
+    const [employeeRow, tasks, milestones, resources] = await Promise.all([
       this.retrieveEmployee(employeeId),
       this.getEmployeeTasks(employeeId),
       this.getMilestones(),
       this.getResources(),
     ]);
-    return selectManagerSummary(employee, tasks, milestones, resources, new Date().toISOString());
+    return selectManagerSummary(
+      employeeRow,
+      tasks,
+      milestones,
+      resources,
+      new Date().toISOString(),
+    );
   }
 
   async getTeamOnboarding(managerName: string): Promise<TeamOnboarding> {
-    const result = await this.client.retrieveMultipleRecordsAsync<DataverseEmployeeRow>(
-      DATAVERSE_TABLES.employee,
-      { filter: `fastpass_managername eq '${odataString(managerName)}'` },
+    const rows = unwrap(
+      await Fastpass_employeesService.getAll({
+        filter: `fastpass_managername eq '${odataString(managerName)}'`,
+      }),
+      'getTeamOnboarding',
     );
-    if (!result.success) {
-      throw toError(result.error, 'getTeamOnboarding');
-    }
     const members = await Promise.all(
-      result.data.map(async (row) => {
+      rows.map(async (row) => {
         const employee = toEmployee(row);
         const tasks = await this.getEmployeeTasks(employee.id);
         return { employee, tasks };
@@ -205,35 +165,86 @@ export class DataverseFastPassRepository implements FastPassRepository {
     if (employeeId === this.currentEmployeeId) {
       return this.getCurrentEmployee();
     }
-    const result = await this.client.retrieveRecordAsync<DataverseEmployeeRow>(
-      DATAVERSE_TABLES.employee,
-      employeeId,
-    );
-    if (!result.success) {
-      throw toError(result.error, 'retrieveEmployee');
-    }
-    return toEmployee(result.data);
-  }
-
-  private async retrieveTask(taskId: string): Promise<EmployeeTask> {
-    const result = await this.client.retrieveRecordAsync<DataverseEmployeeTaskRow>(
-      DATAVERSE_TABLES.employeeTask,
-      taskId,
-    );
-    if (!result.success) {
-      throw toError(result.error, 'retrieveTask');
-    }
-    return toEmployeeTask(result.data);
+    return toEmployee(unwrap(await Fastpass_employeesService.get(employeeId), 'retrieveEmployee'));
   }
 }
 
-/**
- * `IOperationResult.error` is typed `Error | PowerDataRuntimeHttpError`;
- * the latter is a plain `{ message, status?, requestId?, stack? }` shape,
- * not an `Error` subclass, so both are normalized here.
- */
-function toError(error: Error | { message: string } | undefined, context: string): Error {
-  if (error instanceof Error) return error;
-  if (error) return new Error(`${error.message} (DataverseFastPassRepository.${context})`);
-  return new Error(`Dataverse operation failed in DataverseFastPassRepository.${context}`);
+function toEmployee(row: Fastpass_employees): Employee {
+  return {
+    id: row.fastpass_employeeid,
+    employeeId: row.fastpass_employeecode ?? '',
+    displayName: row.fastpass_fullname ?? '',
+    role: row.fastpass_role ?? '',
+    department: row.fastpass_department ?? '',
+    team: row.fastpass_team ?? '',
+    managerName: row.fastpass_managername ?? '',
+    journeyStatus: (row.fastpass_journeystatus as JourneyStatus | undefined) ?? 'Not Started',
+    progressPercentage: row.fastpass_progresspercentage ?? 0,
+    currentMilestone: row.fastpass_currentmilestone ?? '',
+    startDate: row.fastpass_startdate ?? '',
+    lastActivityDate: row.fastpass_lastactivitydate ?? '',
+  };
+}
+
+function toTask(row: Fastpass_employeetasks): EmployeeTask {
+  return {
+    id: row.fastpass_employeetaskid,
+    employeeId: row._fastpass_employee_value ?? '',
+    name: row.fastpass_taskname ?? '',
+    description: row.fastpass_description ?? '',
+    status: (row.fastpass_status as TaskStatus | undefined) ?? 'Not Started',
+    dueDate: row.fastpass_duedate ?? null,
+    completedDate: row.fastpass_completeddate ?? null,
+    blockerFlag: row.fastpass_blockerflag ?? false,
+    blockerDescription: row.fastpass_blockerdescription ?? null,
+    required: row.fastpass_required ?? true,
+    category: row.fastpass_category ?? '',
+    recommendedResourceId: row.fastpass_recommendedresourceid ?? null,
+    notes: row.fastpass_notes ?? null,
+  };
+}
+
+function toMilestone(row: Fastpass_milestones): Milestone {
+  return {
+    id: (row.fastpass_milestonecode ?? '') as MilestoneId,
+    name: row.fastpass_milestonename ?? '',
+    description: row.fastpass_description ?? '',
+    taskNames: splitLines(row.fastpass_tasknames),
+  };
+}
+
+function toResource(row: Fastpass_resources): Resource {
+  return {
+    id: row.fastpass_resourcecode ?? '',
+    name: row.fastpass_resourcename ?? '',
+    description: row.fastpass_description ?? '',
+    type: (row.fastpass_type as ResourceType | undefined) ?? 'Article',
+    url: row.fastpass_url ?? '',
+    relatedTaskNames: splitLines(row.fastpass_relatedtasknames),
+  };
+}
+
+function splitLines(value: string | null | undefined): string[] {
+  return (value ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+/** Escapes a value for a single-quoted OData string literal (`'` -> `''`). */
+function odataString(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+function unwrap<T>(result: IOperationResult<T>, context: string): T {
+  if (!result.success) {
+    const detail =
+      result.error instanceof Error
+        ? result.error.message
+        : result.error
+          ? JSON.stringify(result.error)
+          : 'unknown error';
+    throw new Error(`Dataverse call failed in DataverseFastPassRepository.${context}: ${detail}`);
+  }
+  return result.data;
 }
