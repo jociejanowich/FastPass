@@ -2,11 +2,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// GitHub Pages serves the app from https://<user>.github.io/FastPass/, so the
-// production build (and `npm run preview`) uses that base path. `npm run dev`
-// stays at "/".
+// Two production hosts need two different base paths:
+//  - GitHub Pages serves the app from https://<user>.github.io/FastPass/, so
+//    that build needs base "/FastPass/" — opt in with GITHUB_PAGES=true (set
+//    by .github/workflows/deploy.yml).
+//  - A Power Apps Code App (`pa app push`) is served from its own
+//    apps.powerapps.com path, so it needs base "/" (the default) — same as
+//    `npm run dev` and the Microsoft Code Apps template.
 export default defineConfig(({ command, isPreview }) => ({
-  base: command === 'build' || isPreview ? '/FastPass/' : '/',
+  base: process.env.GITHUB_PAGES === 'true' && (command === 'build' || isPreview) ? '/FastPass/' : '/',
   plugins: [react()],
   server: {
     port: 5173,
