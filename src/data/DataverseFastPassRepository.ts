@@ -17,6 +17,7 @@
 import { getContext } from '@microsoft/power-apps/app';
 import type { IOperationResult } from '@microsoft/power-apps/data';
 
+import { DEMO_EMPLOYEE_ID } from '../config/demoConfig';
 import { applySignalsToTasks } from '../domain/detection';
 import { selectManagerSummary } from '../domain/selectors';
 import type { SignalReading } from '../domain/signals';
@@ -60,9 +61,27 @@ export class DataverseFastPassRepository implements FastPassRepository {
       }),
       'getCurrentEmployee',
     );
-    const row = rows[0];
+    let row = rows[0];
     if (!row) {
-      throw new Error(`No fastpass_employees row found for userPrincipalName "${upn}".`);
+      // Nobody has provisioned a row for this viewer — fall back to the demo
+      // employee (Cesar Martinez) so anyone the app is shared with sees a
+      // working demo instead of a hard error. A real onboarding rollout would
+      // provision a row per employee (e.g. from an HR system sync) and treat
+      // a missing row as a real error instead.
+      const demoRows = unwrap(
+        await Fastpass_employeesService.getAll({
+          filter: `fastpass_employeecode eq '${odataString(DEMO_EMPLOYEE_ID)}'`,
+          top: 1,
+        }),
+        'getCurrentEmployee (demo fallback)',
+      );
+      row = demoRows[0];
+      if (!row) {
+        throw new Error(
+          `No fastpass_employees row found for userPrincipalName "${upn}", and no demo ` +
+            `employee "${DEMO_EMPLOYEE_ID}" exists to fall back to.`,
+        );
+      }
     }
     this.currentEmployeeId = row.fastpass_employeeid;
     return toEmployee(row);
